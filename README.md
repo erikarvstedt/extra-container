@@ -20,7 +20,8 @@ sudo extra-container add --start <<'EOF'
     privateNetwork = true;
     hostAddress = "10.250.0.1";
     localAddress = "10.250.0.2";
-    config = { pkgs, ...}: {
+
+    config = { pkgs, ... }: {
       networking.firewall.allowedTCPPorts = [ 50 ];
 
       systemd.services.hello = {

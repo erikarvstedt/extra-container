@@ -104,6 +104,9 @@ extra-container add STORE_PATH
 extra-container build NIXOS_CONTAINER_CONFIG_FILE
     Build the container config and print the resulting NixOS system etc path
 
+extra-container list-extra
+      List all extra containers
+
 extra-container destroy CONTAINER
 
 extra-container destroy --all|-a

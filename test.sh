@@ -8,7 +8,7 @@ PATH=$scriptDir:$PATH
 
 cleanup() {
     set +e
-    for container in $(extra-container list-extra | grep ^test-); do
+    for container in $(extra-container list | grep ^test-); do
         extra-container destroy $container
     done
     set -e
@@ -128,14 +128,14 @@ output=$(extra-container add -s $storePath)
 testMatches "$output" "*Starting*test-3*"
 
 #
-echo "Test list-extra"
+echo "Test list"
 
-output=$(extra-container list-extra | grep ^test- || true)
+output=$(extra-container list | grep ^test- || true)
 testMatches "$output" "test-1*test-2*test-3"
 
 #
 echo "Test destroy"
 
 cleanup
-output=$(extra-container list-extra | grep ^test- || true)
+output=$(extra-container list | grep ^test- || true)
 testMatches "$output" ""

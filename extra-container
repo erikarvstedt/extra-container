@@ -1,0 +1,336 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+shopt -s nullglob
+
+case $1 in
+    ""|help|-h|--help)
+        echo "Usage:"
+        echo
+        echo "extra-container add NIXOS_CONTAINER_CONFIG_FILE"
+        echo "                    [{--attr | -A} attrPath]"
+        echo "                    [--start|-s | --restart-changed|-r]"
+        echo
+        echo "    NIXOS_CONTAINER_CONFIG_FILE is a NixOS config file with container"
+        echo "    definitions like 'containers.mycontainer = { ... }'"
+        echo
+        echo "    --attr | -A attrPath"
+        echo "      Select an attribute from the config expression"
+        echo
+        echo "    --start | -s"
+        echo "      Start all added containers"
+        echo "      Restart running containers that have changed"
+        echo
+        echo "    --restart-changed | -r"
+        echo "      Restart running containers that have changed"
+        echo
+        echo "    Example:"
+        echo "      extra-container add mycontainers.nix --restart-changed"
+        echo
+        echo "echo NIXOS_CONTAINER_CONFIG | extra-container add"
+        echo "    Read the container config from stdin"
+        echo
+        echo "    Example:"
+        echo "      extra-container add --start <<EOF"
+        echo "        { containers.hello = { enableTun = true; config = {}; }; }"
+        echo "      EOF"
+        echo
+        echo "extra-container add STORE_PATH"
+        echo "    Add containers from STORE_PATH/etc"
+        echo
+        echo "    Examples: "
+        echo "      Add from nixos system derivation"
+        echo "      extra-container add /nix/store/9h..27-nixos-system-foo-18.03"
+        echo
+        echo "      Add from nixos etc derivation"
+        echo "      extra-container add /nix/store/32..9j-etc"
+        echo
+        echo "extra-container build NIXOS_CONTAINER_CONFIG_FILE"
+        echo "    Build the container config and print the resulting NixOS system etc path"
+        echo
+        echo "extra-container destroy CONTAINER"
+        echo
+        echo "extra-container destroy --all|-a"
+        echo "    Destroy all extra containers"
+        echo
+        echo "extra-container CMD ARGS..."
+        echo "    All other commands are forwarded to nixos-container"
+        exit 0
+        ;;
+    add)
+        shift
+        ;;
+    build)
+        onlyBuild=1
+        shift
+        ;;
+    list-extra)
+        list=1
+        ;;
+    destroy)
+        destroy=1
+        shift
+        ;;
+    *)
+        exec nixos-container "$@"
+        ;;
+esac
+
+needToBuildContainers() {
+    [[ ! $1 || -f $1 || -e $1/default.nix ]]
+}
+
+buildContainers() {
+    local cfg
+    if [[ $attr ]]; then
+        cfg="(import ''$(realpath $1)'').\${''$attr''}"
+    else
+        cfg="''$(realpath $1)''"
+    fi
+    nix-build --out-link $2/result - > /dev/null <<EOF
+(import <nixpkgs/nixos> {
+    configuration = {
+      imports = [ $cfg ];
+      fileSystems."/" = { device = "/dev/sda"; };
+      boot.loader.grub.device = "/dev/sda";
+    };
+}).config.system.build.etc
+EOF
+}
+
+getContainers() {
+    for service in $mutableServicesDir/container@?*.service; do
+        getContainerName $service
+    done
+}
+
+getContainerName() {
+    [[ $1 =~ container@(.+)\.service ]]
+    echo ${BASH_REMATCH[1]}
+}
+
+getServiceNames() {
+    for container in $*; do
+        echo "container@$container.service "
+    done
+}
+
+makeGCRootsPath() {
+    # Use gcroots/auto instead of gcroots/per-user/root because
+    # stale links in per-user are not automatically removed.
+    # This avoids cluttering the gcroots dir in case containers
+    # are manually removed.
+    echo /nix/var/nix/gcroots/auto/extra-container-$1
+}
+
+function errEcho() {
+    >&2 echo "$*"
+}
+
+mutableServicesDir=/etc/systemd-mutable/system
+
+# Command 'list extra containers'
+#------------------------------------------------------------------------------
+
+if [[ $list ]]; then
+    getContainers
+    exit 0
+fi
+
+if [[ $EUID != 0 ]]; then
+   errEcho "This command must be run as root"
+   exit 1
+fi
+
+# Command 'destroy container'
+#------------------------------------------------------------------------------
+
+if [[ $destroy ]]; then
+    if [[ ! $1 ]]; then
+        errEcho "No container name specified"
+        exit 1
+    fi
+
+    if [[ $1 == --all || $1 == -a ]]; then
+        containers=$(getContainers)
+    else
+        containers=$1
+    fi
+
+    for container in $containers; do
+        service=container@${container}.service
+        serviceFile=${mutableServicesDir}/$service
+        confFile=/etc/containers/$container.conf
+
+        systemctl stop $service || true
+        rm -f $confFile
+        if [[ -L $serviceFile ]]; then
+            rm $serviceFile
+            needDaemonReload=1
+        fi
+        gcRootsPath=$(makeGCRootsPath $container)
+        rm -f $gcRootsPath
+        rm -f $gcRootsPath.conf
+        nixos-container destroy $container
+    done
+    [[ $needDaemonReload ]] && systemctl daemon-reload
+    exit 0
+fi
+
+## Command 'add container'
+#------------------------------------------------------------------------------
+
+args=()
+while [[ $# -gt 0 ]]; do
+    arg="$1"
+    shift
+    case $arg in
+        --start|-s)
+            start=1
+            ;;
+        --restart|-r)
+            restart=1
+            ;;
+        --attr|-A)
+            attr="$1"
+            shift
+            ;;
+        *)
+            args+=("$arg")
+            ;;
+    esac
+done
+set -- "${args[@]}"
+
+## 1. Build containers if needed
+
+if needToBuildContainers "$1"; then
+    tmpDir=$(mktemp -d)
+    trap "rm -r $tmpDir" EXIT
+
+    if [[ ! $1 || $1 == - ]]; then
+        # Read container cfg from stdin
+        containerCfg=$tmpDir/container-cfg.nix
+        cat > $containerCfg
+    else
+        containerCfg="$1"
+    fi
+    errEcho "Building containers..."
+    buildContainers "$containerCfg" $tmpDir
+    nixosSystemEtc=$tmpDir/result/etc
+
+    if [[ $onlyBuild ]]; then
+        realpath $tmpDir/result
+        exit 0
+    fi
+else
+    nixosSystemEtc="$1/etc"
+    if [[ ! -e $nixosSystemEtc ]]; then
+        errEcho "$nixosSystemEtc doesn't exist"
+        exit 1
+    fi
+fi
+
+## 2. Install containers
+
+services=$(echo $nixosSystemEtc/systemd/system/container@?*.service)
+if [[ ! $services ]]; then
+    errEcho "No container services in $nixosSystemEtc/systemd/system"
+    exit 0
+fi
+
+mkdir -p $mutableServicesDir
+echo
+echo "Installing containers:"
+
+allContainers=()
+changedContainers=()
+for service in $services; do
+    container=$(getContainerName $service)
+    allContainers+=($container)
+    serviceDest=$mutableServicesDir/$(basename $service)
+    confFile=$nixosSystemEtc/containers/$container.conf
+    confDest=/etc/containers/$(basename $confFile)
+
+    if [[ -e $serviceDest && \
+          -e $confDest && \
+          $(realpath $service) == $(realpath $serviceDest) && \
+          $(realpath $confFile) == $(realpath $confDest) \
+        ]]; then
+        echo "$container (unchanged, skipped)"
+    else
+        echo "$container"
+        changedContainers+=($container)
+
+        if [[ ! -e $confFile ]]; then
+            errEcho "Unexpected error: $confFile doesn't exist"
+            exit 1
+        fi
+        ln -sf $(realpath $service) $serviceDest
+        ln -sf $(realpath $confFile) $confDest
+        gcRootsPath=$(makeGCRootsPath $container)
+        ln -sf $serviceDest $gcRootsPath
+        ln -sf $confDest $gcRootsPath.conf
+    fi
+done
+
+if [[ $changedContainers ]]; then
+    systemctl daemon-reload
+fi
+
+## 3. Start/restart containers
+
+echo
+
+if [[ $start ]]; then
+    toStart=()
+    toRestart=()
+    # systemctl is-active fails when some containers are not active
+    statuses=($(systemctl is-active $(getServiceNames ${allContainers[@]}))) || true
+    for i in ${!statuses[@]}; do
+        if [[ ${statuses[$i]} == active ]]; then
+            activeServices+=(${allContainers[$i]})
+        else
+            toStart+=(${allContainers[$i]})
+        fi
+    done
+
+    if ((${#toStart[@]} != 0)); then
+        echo "Starting containers:"
+        printf '%s\n' ${toStart[@]}
+        echo
+        systemctl start $(getServiceNames ${toStart[@]})
+    fi
+
+    # Restart changed services that are active
+    intersection=($(comm -12 <(printf '%s\n' ${activeServices[@]}  | sort) \
+                             <(printf '%s\n' ${changedContainers[@]} | sort)))
+    if ((${#intersection[@]} != 0)); then
+        echo "Restarting containers:"
+        printf '%s\n' ${intersection[@]}
+        echo
+        services=$(getServiceNames ${intersection[@]})
+        # TODO document restart
+        systemctl stop $services
+        sleep 0.1
+        systemctl start $services
+    fi
+elif [[ $restart && $changedContainers ]]; then
+    toRestart=()
+    # systemctl is-active fails when some containers are not active
+    statuses=($(systemctl is-active $(getServiceNames ${changedContainers[@]}))) || true
+    for i in ${!statuses[@]}; do
+        if [[ ${statuses[$i]} == active ]]; then
+            toRestart+=(${changedContainers[$i]})
+        fi
+    done
+    if ((${#toRestart[@]} != 0)); then
+        echo "Restarting containers:"
+        printf '%s\n' ${toRestart[@]}
+        echo
+        services=$(getServiceNames ${toRestart[@]})
+        systemctl stop $services
+        sleep 0.1
+        systemctl start $services
+    fi
+fi

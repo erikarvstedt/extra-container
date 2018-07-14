@@ -292,7 +292,7 @@ if [[ $start ]]; then
     statuses=($(systemctl is-active $(getServiceNames ${allContainers[@]}))) || true
     for i in ${!statuses[@]}; do
         if [[ ${statuses[$i]} == active ]]; then
-            activeServices+=(${allContainers[$i]})
+            runningContainers+=(${allContainers[$i]})
         else
             toStart+=(${allContainers[$i]})
         fi
@@ -305,8 +305,8 @@ if [[ $start ]]; then
         systemctl start $(getServiceNames ${toStart[@]})
     fi
 
-    # Restart changed services that are active
-    intersection=($(comm -12 <(printf '%s\n' ${activeServices[@]}  | sort) \
+    # Restart changed containers that are running
+    intersection=($(comm -12 <(printf '%s\n' ${runningContainers[@]} | sort) \
                              <(printf '%s\n' ${changedContainers[@]} | sort)))
     if ((${#intersection[@]} != 0)); then
         echo "Restarting containers:"

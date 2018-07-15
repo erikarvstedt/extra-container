@@ -39,9 +39,13 @@ EOF
 
 curl 10.250.0.2:50 # Returns 'hello' from the container
 
-# Now change the 'hello' string in the container definition to something else and
-# re-run the `extra-container add --start` command.
+# Now change the 'hello' string in the container definition to something
+# else and re-run the `extra-container add --start` command.
 # The updated container will be automatically restarted.
+
+# The container is a regular container that can be controlled
+# with nixos-container
+nixos-container status demo
 
 # Remove the container
 sudo extra-container destroy demo

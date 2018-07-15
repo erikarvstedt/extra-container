@@ -269,6 +269,10 @@ for service in $services; do
             errEcho "Unexpected error: $confFile doesn't exist"
             exit 1
         fi
+
+        # This dir is missing on freshly installed systems
+        mkdir -p /etc/containers
+
         ln -sf $(realpath $service) $serviceDest
         ln -sf $(realpath $confFile) $confDest
         gcRootsPath=$(makeGCRootsPath $container)

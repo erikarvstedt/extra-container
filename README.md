@@ -71,6 +71,7 @@ in
 ```
 extra-container add NIXOS_CONTAINER_CONFIG_FILE
                     [{--attr | -A} attrPath]
+                    [--nixos-path path]
                     [--start|-s | --restart-changed|-r]
 
     NIXOS_CONTAINER_CONFIG_FILE is a NixOS config file with container
@@ -78,6 +79,10 @@ extra-container add NIXOS_CONTAINER_CONFIG_FILE
 
     --attr | -A attrPath
       Select an attribute from the config expression
+
+    --nixos-path
+      A nix expression that returns a path to the NixOS source
+      to use for building the containers
 
     --start | -s
       Start all added containers
@@ -88,6 +93,9 @@ extra-container add NIXOS_CONTAINER_CONFIG_FILE
 
     Example:
       extra-container add mycontainers.nix --restart-changed
+
+      extra-container add mycontainers.nix --nixos-path \
+        '"${fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz}/nixos"'
 
 echo NIXOS_CONTAINER_CONFIG | extra-container add
     Read the container config from stdin

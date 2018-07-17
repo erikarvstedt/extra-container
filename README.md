@@ -118,6 +118,9 @@ extra-container add STORE_PATH
 extra-container build NIXOS_CONTAINER_CONFIG_FILE
     Build the container config and print the resulting NixOS system etc path
 
+    This command can be used like 'add', but options related
+    to starting are not supported
+
 extra-container list
       List all extra containers
 

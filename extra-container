@@ -56,6 +56,9 @@ case $1 in
         echo "extra-container build NIXOS_CONTAINER_CONFIG_FILE"
         echo "    Build the container config and print the resulting NixOS system etc path"
         echo
+        echo "    This command can be used like 'add', but options related"
+        echo "    to starting are not supported"
+        echo
         echo "extra-container list"
         echo "      List all extra containers"
         echo

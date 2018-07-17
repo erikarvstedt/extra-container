@@ -8,7 +8,7 @@ case $1 in
         echo "Usage:"
         echo
         echo "extra-container add NIXOS_CONTAINER_CONFIG_FILE"
-        echo "                    [{--attr | -A} attrPath]"
+        echo "                    [--attr|-A attrPath]"
         echo "                    [--nixos-path path]"
         echo "                    [--start|-s | --restart-changed|-r]"
         echo

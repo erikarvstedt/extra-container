@@ -70,7 +70,7 @@ in
 ## Usage
 ```
 extra-container add NIXOS_CONTAINER_CONFIG_FILE
-                    [{--attr | -A} attrPath]
+                    [--attr|-A attrPath]
                     [--nixos-path path]
                     [--start|-s | --restart-changed|-r]
 

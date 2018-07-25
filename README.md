@@ -54,7 +54,7 @@ sudo extra-container destroy demo
 ## Install
 
 ```nix
-{ pkgs, ...}:
+{ pkgs, ... }:
 let
   extra-container = pkgs.callPackage (fetchGit {
     url = "https://github.com/erikarvstedt/extra-container.git";
@@ -122,7 +122,7 @@ extra-container build NIXOS_CONTAINER_CONFIG_FILE
     to starting are not supported
 
 extra-container list
-      List all extra containers
+    List all extra containers
 
 extra-container destroy CONTAINER
 

@@ -63,6 +63,7 @@ case $1 in
         echo "    List all extra containers"
         echo
         echo "extra-container destroy CONTAINER"
+        echo "extra-container destroy CONTAINER..."
         echo
         echo "extra-container destroy --all|-a"
         echo "    Destroy all extra containers"
@@ -157,6 +158,7 @@ if [[ $EUID != 0 ]]; then
 fi
 
 # Command 'destroy container'
+# Command 'destroy containers'
 #------------------------------------------------------------------------------
 
 if [[ $destroy ]]; then
@@ -168,7 +170,7 @@ if [[ $destroy ]]; then
     if [[ $1 == --all || $1 == -a ]]; then
         containers=$(getContainers)
     else
-        containers=$1
+        containers="$*"
     fi
 
     for container in $containers; do

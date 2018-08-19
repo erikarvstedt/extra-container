@@ -58,7 +58,7 @@ sudo extra-container destroy demo
 let
   extra-container = pkgs.callPackage (fetchGit {
     url = "https://github.com/erikarvstedt/extra-container.git";
-    # Recommended: Specify a git revision hash
+    # Recommended: Specify a git revision
     # rev = "...";
   }) {};
 in
@@ -135,8 +135,9 @@ extra-container CMD ARGS...
 
 ## Implementation
 
-Take a NixOS config with container definitions, assign dummy values to some required
-options like `fileSystems."/"` and build the resulting system derivation.
+The script works like this: Take a NixOS config with container definitions, assign
+dummy values to some required options like `fileSystems."/"` and build the resulting
+system derivation.
 
 Now link the container files from system derivation to the main system, like so:
 ```

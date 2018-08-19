@@ -60,7 +60,7 @@ case $1 in
         echo "    to starting are not supported"
         echo
         echo "extra-container list"
-        echo "      List all extra containers"
+        echo "    List all extra containers"
         echo
         echo "extra-container destroy CONTAINER"
         echo

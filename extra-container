@@ -113,6 +113,30 @@ buildContainers() {
 EOF
 }
 
+restartContainers() {
+    services=$(getServiceNames $*)
+
+    # `systemctl restart CONTAINER` is broken (https://github.com/NixOS/nixpkgs/issues/43652),
+    # so use a workaraound
+    systemctl stop $services
+    # Retry terminating the container machines until the command succeeds
+    # or the machines have disappeared
+    for ((i = 1;; i++)); do
+        failed=''
+        output=$(machinectl terminate $* 2>&1) || failed=1
+        if [[ ! $failed || $output == *no*machine*known ]]; then
+            break
+        fi
+        echo $output
+        if ((i == 20)); then
+            echo "Failed to stop containers."
+            exit 1
+        fi
+        sleep 0.001
+    done
+    systemctl start $services
+}
+
 getContainers() {
     for service in $mutableServicesDir/container@?*.service; do
         getContainerName $service
@@ -308,7 +332,7 @@ fi
 
 echo
 
-if [[ $start ]]; then
+if [[ $start || $restart ]]; then
     toStart=()
     toRestart=()
     # systemctl is-active fails when some containers are not active
@@ -321,7 +345,7 @@ if [[ $start ]]; then
         fi
     done
 
-    if ((${#toStart[@]} != 0)); then
+    if [[ $start && ((${#toStart[@]} != 0)) ]]; then
         echo "Starting containers:"
         printf '%s\n' ${toStart[@]}
         echo
@@ -335,28 +359,6 @@ if [[ $start ]]; then
         echo "Restarting containers:"
         printf '%s\n' ${intersection[@]}
         echo
-        services=$(getServiceNames ${intersection[@]})
-        # TODO document restart
-        systemctl stop $services
-        sleep 0.1
-        systemctl start $services
-    fi
-elif [[ $restart && $changedContainers ]]; then
-    toRestart=()
-    # systemctl is-active fails when some containers are not active
-    statuses=($(systemctl is-active $(getServiceNames ${changedContainers[@]}))) || true
-    for i in ${!statuses[@]}; do
-        if [[ ${statuses[$i]} == active ]]; then
-            toRestart+=(${changedContainers[$i]})
-        fi
-    done
-    if ((${#toRestart[@]} != 0)); then
-        echo "Restarting containers:"
-        printf '%s\n' ${toRestart[@]}
-        echo
-        services=$(getServiceNames ${toRestart[@]})
-        systemctl stop $services
-        sleep 0.1
-        systemctl start $services
+        restartContainers ${intersection[@]}
     fi
 fi

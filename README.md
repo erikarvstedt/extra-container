@@ -122,9 +122,12 @@ extra-container build NIXOS_CONTAINER_CONFIG_FILE
     to starting are not supported
 
 extra-container list
-      List all extra containers
+    List all extra containers
 
-extra-container destroy CONTAINER
+extra-container restart CONTAINER...
+    Fixes the broken restart command of nixos-container (nixpkgs issue #43652)
+
+extra-container destroy CONTAINER...
 
 extra-container destroy --all|-a
     Destroy all extra containers

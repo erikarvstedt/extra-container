@@ -62,7 +62,9 @@ case $1 in
         echo "extra-container list"
         echo "    List all extra containers"
         echo
-        echo "extra-container destroy CONTAINER"
+        echo "extra-container restart CONTAINER..."
+        echo "    Fixes the broken restart command of nixos-container (nixpkgs issue #43652)"
+        echo
         echo "extra-container destroy CONTAINER..."
         echo
         echo "extra-container destroy --all|-a"
@@ -81,6 +83,10 @@ case $1 in
         ;;
     list)
         list=1
+        ;;
+    restart)
+        restart=1
+        shift
         ;;
     destroy)
         destroy=1
@@ -181,7 +187,14 @@ if [[ $EUID != 0 ]]; then
    exit 1
 fi
 
-# Command 'destroy container'
+# Command 'restart container'
+#------------------------------------------------------------------------------
+
+if [[ $restart ]]; then
+    restartContainers $*
+    exit 0
+fi
+
 # Command 'destroy containers'
 #------------------------------------------------------------------------------
 

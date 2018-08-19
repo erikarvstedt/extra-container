@@ -14,7 +14,7 @@ This tool brings you the best of both worlds.
 
 ```bash
 
-sudo extra-container add --start <<'EOF'
+sudo extra-container create --start <<'EOF'
 {
   containers.demo = {
     privateNetwork = true;
@@ -40,7 +40,7 @@ EOF
 curl 10.250.0.2:50 # Returns 'hello' from the container
 
 # Now change the 'hello' string in the container definition to something
-# else and re-run the `extra-container add --start` command.
+# else and re-run the `extra-container create --start` command.
 # The updated container will be automatically restarted.
 
 # The container is a regular container that can be controlled
@@ -69,10 +69,10 @@ in
 
 ## Usage
 ```
-extra-container add NIXOS_CONTAINER_CONFIG_FILE
-                    [--attr|-A attrPath]
-                    [--nixos-path path]
-                    [--start|-s | --restart-changed|-r]
+extra-container create NIXOS_CONTAINER_CONFIG_FILE
+                       [--attr|-A attrPath]
+                       [--nixos-path path]
+                       [--start|-s | --restart-changed|-r]
 
     NIXOS_CONTAINER_CONFIG_FILE is a NixOS config file with container
     definitions like 'containers.mycontainer = { ... }'
@@ -85,44 +85,44 @@ extra-container add NIXOS_CONTAINER_CONFIG_FILE
       to use for building the containers
 
     --start | -s
-      Start all added containers
+      Start all created containers
       Restart running containers that have changed
 
     --restart-changed | -r
       Restart running containers that have changed
 
     Example:
-      extra-container add mycontainers.nix --restart-changed
+      extra-container create mycontainers.nix --restart-changed
 
-      extra-container add mycontainers.nix --nixos-path \
+      extra-container create mycontainers.nix --nixos-path \
         '"${fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz}/nixos"'
 
-echo NIXOS_CONTAINER_CONFIG | extra-container add
+echo NIXOS_CONTAINER_CONFIG | extra-container create
     Read the container config from stdin
 
     Example:
-      extra-container add --start <<EOF
+      extra-container create --start <<EOF
         { containers.hello = { enableTun = true; config = {}; }; }
       EOF
 
-extra-container add STORE_PATH
-    Add containers from STORE_PATH/etc
+extra-container create STORE_PATH
+    Create containers from STORE_PATH/etc
 
     Examples:
-      Add from nixos system derivation
-      extra-container add /nix/store/9h..27-nixos-system-foo-18.03
+      Create from nixos system derivation
+      extra-container create /nix/store/9h..27-nixos-system-foo-18.03
 
-      Add from nixos etc derivation
-      extra-container add /nix/store/32..9j-etc
+      Create from nixos etc derivation
+      extra-container create /nix/store/32..9j-etc
 
 extra-container build NIXOS_CONTAINER_CONFIG_FILE
     Build the container config and print the resulting NixOS system etc path
 
-    This command can be used like 'add', but options related
+    This command can be used like 'create', but options related
     to starting are not supported
 
 extra-container list
-    List all extra containers
+      List all extra containers
 
 extra-container destroy CONTAINER
 

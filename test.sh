@@ -41,7 +41,7 @@ cleanup
 #
 echo "Test attr arg and container starting "
 
-output=$(extra-container add -A 'a b' --start <<'EOF'
+output=$(extra-container create -A 'a b' --start <<'EOF'
 {
   "a b" = { config, pkgs, ... }:
     {
@@ -58,7 +58,7 @@ testMatches "$output" "*Installing*test-1*Starting*test-1*"
 #
 echo "Test starting and restarting"
 
-output=$(extra-container add -s <<'EOF'
+output=$(extra-container create -s <<'EOF'
 { config, pkgs, ... }:
 {
   containers.test-1 = {
@@ -78,7 +78,7 @@ testMatches "$output" "*Starting*test-2*Restarting*test-1*"
 #
 echo "Test unchanged"
 
-output=$(extra-container add -s <<'EOF'
+output=$(extra-container create -s <<'EOF'
 { config, pkgs, ... }:
 {
   containers.test-1 = {
@@ -95,7 +95,7 @@ testMatches "$output" "*test-1 (unchanged, skipped)*"
 #
 echo "Test restart"
 
-output=$(extra-container add -r <<'EOF'
+output=$(extra-container create -r <<'EOF'
 { config, pkgs, ... }:
 {
   containers.test-1 = {
@@ -124,7 +124,7 @@ EOF
 
 testMatches "$storePath" "/nix/store/*"
 
-output=$(extra-container add -s $storePath)
+output=$(extra-container create -s $storePath)
 testMatches "$output" "*Starting*test-3*"
 
 #

@@ -185,6 +185,8 @@ if [[ $destroy ]]; then
         gcRootsPath=$(makeGCRootsPath $container)
         rm -f $gcRootsPath
         rm -f $gcRootsPath.conf
+        # Create dummy confFile so that `nixos-container` doesn't quit
+        touch $confFile
         nixos-container destroy $container
     done
     [[ $needDaemonReload ]] && systemctl daemon-reload

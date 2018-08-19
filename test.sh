@@ -136,6 +136,8 @@ testMatches "$output" "test-1*test-2*test-3"
 #
 echo "Test destroy"
 
+[[ $(echo /var/lib/containers/test-*) ]]
 cleanup
 output=$(extra-container list | grep ^test- || true)
 testMatches "$output" ""
+[[ ! $(echo /var/lib/containers/test-*) ]]

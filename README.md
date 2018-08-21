@@ -56,9 +56,9 @@ sudo extra-container destroy demo
 ```nix
 { pkgs, ... }:
 let
-  extra-container = pkgs.callPackage (fetchGit {
+  extra-container = pkgs.callPackage (builtins.fetchGit {
     url = "https://github.com/erikarvstedt/extra-container.git";
-    # Recommended: Specify a git revision
+    # Recommended: Specify a git revision hash
     # rev = "...";
   }) {};
 in

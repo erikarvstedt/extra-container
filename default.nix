@@ -5,8 +5,7 @@ stdenv.mkDerivation rec {
   version = "0.2";
 
   buildCommand = ''
-    mkdir -p $out/bin
-    cp ${./extra-container} $out/bin/extra-container
+    install -D ${./extra-container} $out/bin/extra-container
     patchShebangs $out/bin
   '';
 

@@ -130,7 +130,7 @@ restartContainers() {
     for ((i = 1;; i++)); do
         failed=''
         output=$(machinectl terminate $* 2>&1) || failed=1
-        if [[ ! $failed || $output == *no*machine*known ]]; then
+        if [[ ! $failed || $output == *no*machine*known* ]]; then
             break
         fi
         echo $output

@@ -311,17 +311,20 @@ if [[ ! $services ]]; then
     errEcho "No container services in $nixosSystemEtc/systemd/system"
     exit 0
 fi
+allContainers=()
+for service in $services; do
+    allContainers+=($(getContainerName $service))
+done
+allContainers=($(printf '%s\n' ${allContainers[@]} | sort))
 
 mkdir -p $mutableServicesDir /etc/containers /nix/var/nix/gcroots/auto/
 
 echo
 echo "Installing containers:"
 
-allContainers=()
 changedContainers=()
-for service in $services; do
-    container=$(getContainerName $service)
-    allContainers+=($container)
+for container in ${allContainers[@]} ; do
+    service=$nixosSystemEtc/systemd/system/container@$container.service
     serviceDest=$mutableServicesDir/$(basename $service)
     confFile=$nixosSystemEtc/containers/$container.conf
     confDest=/etc/containers/$(basename $confFile)
@@ -379,7 +382,7 @@ if [[ $start || $restart ]]; then
 
     # Restart changed containers that are running
     intersection=($(comm -12 <(printf '%s\n' ${runningContainers[@]} | sort) \
-                             <(printf '%s\n' ${changedContainers[@]} | sort)))
+                             <(printf '%s\n' ${changedContainers[@]})))
     if ((${#intersection[@]} != 0)); then
         echo "Restarting containers:"
         printf '%s\n' ${intersection[@]}

@@ -43,12 +43,11 @@ echo "Test attr arg and container starting "
 
 output=$(extra-container create -A 'a b' --start <<'EOF'
 {
-  "a b" = { config, pkgs, ... }:
-    {
-      containers.test-1 = {
-          config = {};
-      };
+  "a b" = { config, pkgs, ... }: {
+    containers.test-1 = {
+      config = {};
     };
+  };
 }
 EOF
 )
@@ -62,12 +61,10 @@ output=$(extra-container create -s <<'EOF'
 { config, pkgs, ... }:
 {
   containers.test-1 = {
-      config = {
-         environment.variables.FOO = "a";
-      };
+    config.environment.variables.foo = "a";
   };
   containers.test-2 = {
-      config = {};
+    config = {};
   };
 }
 EOF
@@ -82,9 +79,7 @@ output=$(extra-container create -s <<'EOF'
 { config, pkgs, ... }:
 {
   containers.test-1 = {
-      config = {
-         environment.variables.FOO = "a";
-      };
+    config.environment.variables.foo = "a";
   };
 }
 EOF
@@ -99,9 +94,7 @@ output=$(extra-container create -r <<'EOF'
 { config, pkgs, ... }:
 {
   containers.test-1 = {
-      config = {
-         environment.variables.FOO = "b";
-      };
+    config.environment.variables.foo = "b";
   };
 }
 EOF

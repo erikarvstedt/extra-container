@@ -312,9 +312,7 @@ if [[ ! $services ]]; then
     exit 0
 fi
 
-mkdir -p $mutableServicesDir
-# This dir is missing on newly installed systems
-mkdir -p /etc/containers
+mkdir -p $mutableServicesDir /etc/containers /nix/var/nix/gcroots/auto/
 
 echo
 echo "Installing containers:"

@@ -89,7 +89,12 @@ extra-container create NIXOS_CONTAINER_CONFIG_FILE
 
     --start | -s
       Start all created containers
-      Restart running containers that have changed
+      Update running containers that have changed or restart them if '--restart-changed' was specified
+
+    --update-changed | -u
+      Update running containers with a changed system configuration by running
+      'switch-to-configuration' inside the container.
+      Restart containers with a changed container configuration
 
     --restart-changed | -r
       Restart running containers that have changed

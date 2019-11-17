@@ -27,7 +27,12 @@ case $1 in
         echo
         echo "    --start | -s"
         echo "      Start all created containers"
-        echo "      Restart running containers that have changed"
+        echo "      Update running containers that have changed or restart them if '--restart-changed' was specified"
+        echo
+        echo "    --update-changed | -u"
+        echo "      Update running containers with a changed system configuration by running"
+        echo "      'switch-to-configuration' inside the container."
+        echo "      Restart containers with a changed container configuration"
         echo
         echo "    --restart-changed | -r"
         echo "      Restart running containers that have changed"
@@ -146,6 +151,17 @@ restartContainers() {
     systemctl start $services
 }
 
+updateContainers() {
+    for container in $*; do
+        confFile=/etc/containers/$container.conf
+        systemPath=$(grep -ohP "(?<=^SYSTEM_PATH=).*" $confFile)
+        # Shift output 2 spaces to the right
+        echo "  Updating $container"
+        nixos-container run $container -- bash -lc "${systemPath}/bin/switch-to-configuration test" |& sed 's/^/  /' || true
+        echo
+    done
+}
+
 getContainers() {
     for service in $mutableServicesDir/container@?*.service; do
         getContainerName $service
@@ -246,6 +262,9 @@ while [[ $# -gt 0 ]]; do
         --start|-s)
             start=1
             ;;
+        --update|-u)
+            update=1
+            ;;
         --restart|-r)
             restart=1
             ;;
@@ -322,18 +341,32 @@ mkdir -p $mutableServicesDir /etc/containers /nix/var/nix/gcroots/auto/
 echo
 echo "Installing containers:"
 
+confWithoutSystem() {
+    sed /^SYSTEM_PATH=/d $1
+}
+
+isContainerUnchanged() {
+    [[ -e $serviceDest && \
+       -e $confDest && \
+       $(realpath $service) == $(realpath $serviceDest) ]] || return 1
+
+    if [[ $(realpath $confFile) != $(realpath $confDest) ]]; then
+        if [[ $(confWithoutSystem $confFile) == $(confWithoutSystem $confDest) ]]; then
+            onlySystemChangedContainers+=($container)
+        fi
+        return 1
+    fi
+}
+
 changedContainers=()
+onlySystemChangedContainers=()
 for container in ${allContainers[@]} ; do
     service=$nixosSystemEtc/systemd/system/container@$container.service
     serviceDest=$mutableServicesDir/$(basename $service)
     confFile=$nixosSystemEtc/containers/$container.conf
     confDest=/etc/containers/$(basename $confFile)
 
-    if [[ -e $serviceDest && \
-          -e $confDest && \
-          $(realpath $service) == $(realpath $serviceDest) && \
-          $(realpath $confFile) == $(realpath $confDest) \
-        ]]; then
+    if isContainerUnchanged; then
         echo "$container (unchanged, skipped)"
     else
         echo "$container"
@@ -360,7 +393,7 @@ fi
 
 echo
 
-if [[ $start || $restart ]]; then
+if [[ $start || $update || $restart ]]; then
     toStart=()
     toRestart=()
     # systemctl is-active fails when some containers are not active
@@ -380,13 +413,27 @@ if [[ $start || $restart ]]; then
         systemctl start $(getServiceNames ${toStart[@]})
     fi
 
-    # Restart changed containers that are running
-    intersection=($(comm -12 <(printf '%s\n' ${runningContainers[@]} | sort) \
-                             <(printf '%s\n' ${changedContainers[@]})))
-    if ((${#intersection[@]} != 0)); then
-        echo "Restarting containers:"
-        printf '%s\n' ${intersection[@]}
-        echo
-        restartContainers ${intersection[@]}
+    # Update or restart changed containers that are running
+    toRestart=($(comm -12 <(printf '%s\n' ${runningContainers[@]} | sort) \
+                          <(printf '%s\n' ${changedContainers[@]})))
+    if ((${#toRestart[@]} != 0)); then
+        if [[ ! $restart ]]; then
+            toUpdate=($(comm -12 <(printf '%s\n' ${toRestart[@]}) \
+                                 <(printf '%s\n' ${onlySystemChangedContainers[@]})))
+            toRestart=($(comm -23 <(printf '%s\n' ${toRestart[@]}) \
+                                  <(printf '%s\n' ${toUpdate[@]})))
+            if ((${#toUpdate[@]} != 0)); then
+                echo "Updating containers:"
+                printf '%s\n' ${toUpdate[@]}
+                echo
+                updateContainers ${toUpdate[@]}
+            fi
+        fi
+        if ((${#toRestart[@]} != 0)); then
+            echo "Restarting containers:"
+            printf '%s\n' ${toRestart[@]}
+            echo
+            restartContainers ${toRestart[@]}
+        fi
     fi
 fi

@@ -55,7 +55,7 @@ EOF
 testMatches "$output" "*Installing*test-1*Starting*test-1*"
 
 #
-echo "Test starting and restarting"
+echo "Test starting and updating"
 
 output=$(extra-container create -s <<'EOF'
 { config, pkgs, ... }:
@@ -70,7 +70,7 @@ output=$(extra-container create -s <<'EOF'
 EOF
 )
 
-testMatches "$output" "*Starting*test-2*Restarting*test-1*"
+testMatches "$output" "*Starting*test-2*Updating*test-1*"
 
 #
 echo "Test unchanged"
@@ -88,19 +88,23 @@ EOF
 testMatches "$output" "*test-1 (unchanged, skipped)*"
 
 #
-echo "Test restart"
+echo "Test updating and restarting"
 
-output=$(extra-container create -r <<'EOF'
+output=$(extra-container create -u <<'EOF'
 { config, pkgs, ... }:
 {
   containers.test-1 = {
     config.environment.variables.foo = "b";
   };
+  containers.test-2 = {
+    privateNetwork = true;
+    config = {};
+  };
 }
 EOF
 )
 
-testMatches "$output" "*Restarting*test-1*"
+testMatches "$output" "*Updating*test-1*Restarting*test-2*"
 
 #
 echo "Test manual build"

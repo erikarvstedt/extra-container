@@ -18,9 +18,12 @@ case $1 in
         echo "    --attr | -A attrPath"
         echo "      Select an attribute from the config expression"
         echo
-        echo "    --nixos-path"
-        echo "      A nix expression that returns a path to the NixOS source"
+        echo "    --nixpkgs-path"
+        echo "      A nix expression that returns a path to the nixpkgs source"
         echo "      to use for building the containers"
+        echo
+        echo "    --nixos-path"
+        echo "      Like '--nixpkgs-path', but for directly specifying the NixOS source"
         echo
         echo "    --start | -s"
         echo "      Start all created containers"
@@ -32,8 +35,8 @@ case $1 in
         echo "    Example:"
         echo "      extra-container create mycontainers.nix --restart-changed"
         echo
-        echo "      extra-container create mycontainers.nix --nixos-path \\"
-        echo "        '"'"${fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz}/nixos"'"'"
+        echo "      extra-container create mycontainers.nix --nixpkgs-path \\"
+        echo "        'fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz'"
         echo
         echo "echo NIXOS_CONTAINER_CONFIG | extra-container create"
         echo "    Read the container config from stdin"
@@ -250,6 +253,10 @@ while [[ $# -gt 0 ]]; do
             attr="$1"
             shift
             ;;
+        --nixpkgs-path)
+            nixpkgsPath="$1"
+            shift
+            ;;
         --nixos-path)
             nixosPath="$1"
             shift
@@ -274,8 +281,15 @@ if needToBuildContainers "$1"; then
     else
         containerCfg="$1"
     fi
+    if [[ ! $nixosPath ]]; then
+        if [[ $nixpkgsPath ]]; then
+            nixosPath="\"\${$nixpkgsPath}/nixos\""
+        else
+            nixosPath="<nixpkgs/nixos>"
+        fi
+    fi
     errEcho "Building containers..."
-    buildContainers "$containerCfg" $tmpDir "${nixosPath:-<nixpkgs/nixos>}"
+    buildContainers "$containerCfg" $tmpDir "$nixosPath"
     nixosSystemEtc=$tmpDir/result/etc
 
     if [[ $onlyBuild ]]; then

@@ -80,9 +80,12 @@ extra-container create NIXOS_CONTAINER_CONFIG_FILE
     --attr | -A attrPath
       Select an attribute from the config expression
 
-    --nixos-path
-      A nix expression that returns a path to the NixOS source
+    --nixpkgs-path
+      A nix expression that returns a path to the nixpkgs source
       to use for building the containers
+
+    --nixos-path
+      Like '--nixpkgs-path', but for directly specifying the NixOS source
 
     --start | -s
       Start all created containers
@@ -94,8 +97,8 @@ extra-container create NIXOS_CONTAINER_CONFIG_FILE
     Example:
       extra-container create mycontainers.nix --restart-changed
 
-      extra-container create mycontainers.nix --nixos-path \
-        '"${fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz}/nixos"'
+      extra-container create mycontainers.nix --nixpkgs-path \
+        'fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz'
 
 echo NIXOS_CONTAINER_CONFIG | extra-container create
     Read the container config from stdin

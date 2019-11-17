@@ -156,11 +156,6 @@ Finally, add gcroots pointing to the linked files.
 ## Developing
 All contributions and suggestions are welcome, even if they're minor or cosmetic.
 
-Run `test.sh` for tests.
+For tests run `test.sh` or `run-tests-in-container.sh` to reduce interference with your main system.
 
-The tests add and remove temporary containers named `test-*` on the main
-system.
-Due to a [NixOS bug](https://github.com/NixOS/nixpkgs/issues/40355), it's currently not possible to run
-nix builds inside a container.
-A future fix will allow all tests to be run in a container to reduce interference
-with the main system.
+The tests add and remove temporary containers named `test-*` on the host system.

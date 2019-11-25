@@ -2,7 +2,7 @@
 
 stdenv.mkDerivation rec {
   name = "extra-container-${version}";
-  version = "0.2";
+  version = "0.3";
 
   buildCommand = ''
     install -D ${./extra-container} $out/bin/extra-container

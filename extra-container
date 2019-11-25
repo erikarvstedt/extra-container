@@ -54,7 +54,7 @@ case $1 in
         echo "extra-container create STORE_PATH"
         echo "    Create containers from STORE_PATH/etc"
         echo
-        echo "    Examples: "
+        echo "    Examples:"
         echo "      Create from nixos system derivation"
         echo "      extra-container create /nix/store/9h..27-nixos-system-foo-18.03"
         echo

@@ -116,7 +116,7 @@ echo NIXOS_CONTAINER_CONFIG | extra-container create
 extra-container create STORE_PATH
     Create containers from STORE_PATH/etc
 
-    Examples:
+    Examples: 
       Create from nixos system derivation
       extra-container create /nix/store/9h..27-nixos-system-foo-18.03
 

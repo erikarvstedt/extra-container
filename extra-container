@@ -37,11 +37,17 @@ case $1 in
         echo "    --restart-changed | -r"
         echo "      Restart running containers that have changed"
         echo
+        echo "    --build-args ARG..."
+        echo "      All following args are passed to nix-build."
+        echo "      Must be the last option given."
+        echo
         echo "    Example:"
         echo "      extra-container create mycontainers.nix --restart-changed"
         echo
         echo "      extra-container create mycontainers.nix --nixpkgs-path \\"
         echo "        'fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz'"
+        echo
+        echo "      extra-container create mycontainers.nix --start --build-args --builders 'ssh://worker - - 8'"
         echo
         echo "echo NIXOS_CONTAINER_CONFIG | extra-container create"
         echo "    Read the container config from stdin"
@@ -116,7 +122,7 @@ buildContainers() {
     else
         cfg="''$(realpath $1)''"
     fi
-    nix-build --out-link $2/result - > /dev/null <<EOF
+    nix-build --out-link $2/result "${buildArgs[@]}" - > /dev/null <<EOF
 (import $3 {
     configuration = {
       imports = [ $cfg ];
@@ -279,6 +285,10 @@ while [[ $# -gt 0 ]]; do
         --nixos-path)
             nixosPath="$1"
             shift
+            ;;
+        --build-args)
+            buildArgs=("$@")
+            break
             ;;
         *)
             args+=("$arg")

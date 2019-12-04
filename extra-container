@@ -197,7 +197,11 @@ function errEcho() {
     >&2 echo "$*"
 }
 
-mutableServicesDir=/etc/systemd-mutable/system
+if uname -a | grep -q NixOS; then
+    mutableServicesDir=/etc/systemd-mutable/system
+else
+    mutableServicesDir=/usr/lib/systemd/system
+fi
 
 # Command 'list extra containers'
 #------------------------------------------------------------------------------
@@ -351,6 +355,14 @@ mkdir -p $mutableServicesDir /etc/containers /nix/var/nix/gcroots/auto/
 echo
 echo "Installing containers:"
 
+etcStaticPresent() {
+    if [ ! -f /etc/static/os-release ]; then
+        echo "NOTICE: creating dummy file /etc/static/os-release. See https://github.com/NixOS/nixpkgs/issues/28833"
+        mkdir -p /etc/static
+        echo "# dummy file was added by extra-container" > /etc/static/os-release
+    fi
+}
+
 confWithoutSystem() {
     sed /^SYSTEM_PATH=/d $1
 }
@@ -404,6 +416,7 @@ fi
 echo
 
 if [[ $start || $update || $restart ]]; then
+    etcStaticPresent
     toStart=()
     toRestart=()
     # systemctl is-active fails when some containers are not active

@@ -67,6 +67,32 @@ in
 }
 ```
 
+## Install on Ubuntu (or similar systemd-based Linux)
+
+1. Install Nix with `--deamon`
+2. `$ sudo apt install systemd-container` to get `machinectl` and `systemd-nspawn`.
+3. Add an overlay `/root/.config/nixpkgs/overlays/extra-container.nix`:
+```
+self: super: {
+  extra-container = (builtins.fetchGit {
+    url = "https://github.com/erikarvstedt/extra-container.git";
+    # Recommended: Specify a git revision hash
+    # rev = "...";
+  }) {};
+}
+```
+4. `sudo visudo` and add `/root/.nix-profile/bin` to `Defaults` path:
+```
+...
+Defaults        secure_path="/root/.nix-profile/bin:...rest is same..."
+...
+```
+5. Install using Nix as root:
+```
+$ sudo nix-env -iA nixpkgs.extra-container
+```
+From now on, use only with `sudo`.
+
 ## Usage
 ```
 extra-container create NIXOS_CONTAINER_CONFIG_FILE
@@ -116,7 +142,7 @@ echo NIXOS_CONTAINER_CONFIG | extra-container create
 extra-container create STORE_PATH
     Create containers from STORE_PATH/etc
 
-    Examples: 
+    Examples:
       Create from nixos system derivation
       extra-container create /nix/store/9h..27-nixos-system-foo-18.03
 

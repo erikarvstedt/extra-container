@@ -69,12 +69,16 @@ in
 
 ## Install on Ubuntu (or similar systemd-based Linux)
 
-1. Install Nix with `--deamon`
-2. `$ sudo apt install systemd-container` to get `machinectl` and `systemd-nspawn`.
+1. [Install Nix with `--deamon`](https://nixos.org/nix/manual/#sect-multi-user-installation) and relogin
+2. `$ sudo apt-get update && sudo apt install systemd-container` to get `machinectl` and `systemd-nspawn`.
+3. Create a directory for overlays:
+```
+$ sudo mkdir -p /root/.config/nixpkgs/overlays
+```
 3. Add an overlay `/root/.config/nixpkgs/overlays/extra-container.nix`:
 ```
 self: super: {
-  extra-container = (builtins.fetchGit {
+  extra-container = super.callPackage (builtins.fetchGit {
     url = "https://github.com/erikarvstedt/extra-container.git";
     # Recommended: Specify a git revision hash
     # rev = "...";
@@ -89,7 +93,7 @@ Defaults        secure_path="/root/.nix-profile/bin:...rest is same..."
 ```
 5. Install using Nix as root:
 ```
-$ sudo nix-env -iA nixpkgs.extra-container
+$ sudo -i nix-env -iA nixpkgs.extra-container
 ```
 From now on, use only with `sudo`.
 
@@ -97,7 +101,7 @@ From now on, use only with `sudo`.
 ```
 extra-container create NIXOS_CONTAINER_CONFIG_FILE
                        [--attr|-A attrPath]
-                       [--nixos-path path]
+                       [--nixos-path|--nixpkgs-path path]
                        [--start|-s | --restart-changed|-r]
 
     NIXOS_CONTAINER_CONFIG_FILE is a NixOS config file with container

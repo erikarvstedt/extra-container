@@ -8,9 +8,11 @@ stdenv.mkDerivation rec {
     nixos-container
   ];
 
-  buildCommand = ''
+  installPhase = ''
     install -D ${./extra-container} $out/bin/extra-container
     patchShebangs $out/bin
+    substituteInPlace $out/bin/extra-container \
+       --replace 'exec nixos-container' 'exec ${nixos-container}/bin/nixos-container'
   '';
 
   meta = with lib; {

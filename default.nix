@@ -7,6 +7,7 @@ stdenv.mkDerivation rec {
   buildCommand = ''
     install -D ${./extra-container} $out/bin/extra-container
     patchShebangs $out/bin
+    sed -i 's|evalConfig=.*|evalConfig=${./eval-config.nix}|' $out/bin/extra-container
   '';
 
   meta = with lib; {

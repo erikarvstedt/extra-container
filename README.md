@@ -149,11 +149,12 @@ extra-container CMD ARGS...
 
 ## Implementation
 
-The script works like this: Take a NixOS config with container definitions, assign
-dummy values to some required options like `fileSystems."/"` and build the resulting
-system derivation.
+The script works like this: Take a NixOS config with container definitions and build
+the system's `config.system.build.etc` derivation.
+Because we're not building a full system we can use a reduced module set
+(`eval-config.nix`) to improve evaluation performance.
 
-Now link the container files from system derivation to the main system, like so:
+Now link the container files from the etc derivation to the main system, like so:
 ```
 nixos-system/etc/systemd/system/container@CONTAINER.service -> /etc/systemd-mutable/system
 nixos-system/etc/containers/CONTAINER.conf -> /etc/containers

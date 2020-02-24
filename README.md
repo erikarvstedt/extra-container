@@ -22,6 +22,9 @@ sudo extra-container create --start <<'EOF'
     localAddress = "10.250.0.2";
 
     config = { pkgs, ... }: {
+      # Reduce evaluation time. Not needed for NixOS ≥ 20.03
+      documentation.nixos.enable = false;
+
       networking.firewall.allowedTCPPorts = [ 50 ];
 
       systemd.services.hello = {
@@ -116,7 +119,7 @@ echo NIXOS_CONTAINER_CONFIG | extra-container create
 extra-container create STORE_PATH
     Create containers from STORE_PATH/etc
 
-    Examples: 
+    Examples:
       Create from nixos system derivation
       extra-container create /nix/store/9h..27-nixos-system-foo-18.03
 

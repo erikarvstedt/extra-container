@@ -356,7 +356,7 @@ echo
 echo "Installing containers:"
 
 etcStaticPresent() {
-    if [ ! -f /etc/static/os-release ]; then
+    if [[ ! -f /etc/static/os-release ]]; then
         echo "NOTICE: creating dummy file /etc/static/os-release. See https://github.com/NixOS/nixpkgs/issues/28833"
         mkdir -p /etc/static
         echo "# dummy file was added by extra-container" > /etc/static/os-release

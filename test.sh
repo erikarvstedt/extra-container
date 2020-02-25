@@ -36,16 +36,19 @@ testMatches() {
     fi
 }
 
+# This significantly reduces eval time. Not needed for NixOS ≥ 20.03
+baseConfig='config = { documentation.nixos.enable = false; }'
+
 cleanup
 
 #
 echo "Test attr arg and container starting "
 
-output=$(extra-container create -A 'a b' --start <<'EOF'
+output=$(extra-container create -A 'a b' --start <<EOF
 {
   "a b" = { config, pkgs, ... }: {
     containers.test-1 = {
-      config = {};
+      $baseConfig;
     };
   };
 }
@@ -57,14 +60,14 @@ testMatches "$output" "*Installing*test-1*Starting*test-1*"
 #
 echo "Test starting and updating"
 
-output=$(extra-container create -s <<'EOF'
+output=$(extra-container create -s <<EOF
 { config, pkgs, ... }:
 {
   containers.test-1 = {
-    config.environment.variables.foo = "a";
+    $baseConfig // { environment.variables.foo = "a"; };
   };
   containers.test-2 = {
-    config = {};
+    $baseConfig;
   };
 }
 EOF
@@ -75,11 +78,11 @@ testMatches "$output" "*Starting*test-2*Updating*test-1*"
 #
 echo "Test unchanged"
 
-output=$(extra-container create -s <<'EOF'
+output=$(extra-container create -s <<EOF
 { config, pkgs, ... }:
 {
   containers.test-1 = {
-    config.environment.variables.foo = "a";
+    $baseConfig // { environment.variables.foo = "a"; };
   };
 }
 EOF
@@ -90,15 +93,15 @@ testMatches "$output" "*test-1 (unchanged, skipped)*"
 #
 echo "Test updating and restarting"
 
-output=$(extra-container create -u <<'EOF'
+output=$(extra-container create -u <<EOF
 { config, pkgs, ... }:
 {
   containers.test-1 = {
-    config.environment.variables.foo = "b";
+    $baseConfig // { environment.variables.foo = "b"; };
   };
   containers.test-2 = {
     privateNetwork = true;
-    config = {};
+    $baseConfig;
   };
 }
 EOF
@@ -109,11 +112,11 @@ testMatches "$output" "*Updating*test-1*Restarting*test-2*"
 #
 echo "Test manual build"
 
-storePath=$(extra-container build <<'EOF'
+storePath=$(extra-container build <<EOF
 { config, pkgs, ... }:
 {
   containers.test-3 = {
-      config = {};
+      $baseConfig;
   };
 }
 EOF

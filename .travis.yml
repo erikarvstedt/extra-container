@@ -1,0 +1,14 @@
+dist: bionic
+language: nix
+
+script:
+  # hack for single-user build
+  - mkdir -p /nix/var/nix && touch /nix/var/nix/daemon-socket
+  - sudo mkdir -p /etc/nix
+  # Enable nix-build for root
+  - echo "build-users-group =" | sudo tee /etc/nix/nix.conf > /dev/null
+  - nix-build -E '(import <nixpkgs> {}).callPackage ./. {}'
+  - export PATH=$(realpath result)/bin:$PATH
+  - sudo env "PATH=$PATH NIX_PATH=$NIX_PATH" ./test.sh --use-global-bin
+  - sudo systemctl status container@test-1.service -l
+  - sudo journalctl -u container@test-1.service -l

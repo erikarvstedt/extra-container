@@ -197,10 +197,10 @@ function errEcho() {
     >&2 echo "$*"
 }
 
-if uname -a | grep -q NixOS; then
-    mutableServicesDir=/etc/systemd-mutable/system
-else
-    mutableServicesDir=/usr/lib/systemd/system
+mutableServicesDir=/etc/systemd-mutable/system
+if [[ ! -e $mutableServicesDir ]]
+   # Non-NixOS
+   mutableServicesDir=/usr/lib/systemd/system
 fi
 
 # Command 'list extra containers'

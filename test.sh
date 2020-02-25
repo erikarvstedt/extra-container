@@ -4,7 +4,9 @@ set -euo pipefail
 shopt -s nullglob
 
 scriptDir="$(dirname "$(readlink -f "$0")")"
-PATH=$scriptDir:$PATH
+if [[ -v 1 && $1 != --use-global-bin ]]; then
+    PATH=$scriptDir:$PATH
+fi
 
 cleanup() {
     set +e

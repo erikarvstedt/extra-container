@@ -1,22 +1,15 @@
-{ stdenv, lib, nixos-container ? null }:
+{ stdenv, lib, nixos-container }:
 
 stdenv.mkDerivation rec {
   name = "extra-container-${version}";
   version = "0.3";
 
-  src = ./extra-container;
-  dontUnpack = true;
-
-  propagatedBuildInputs = [
-    nixos-container
-  ];
-
-  installPhase = ''
+  buildCommand = ''
     install -D ${./extra-container} $out/bin/extra-container
     patchShebangs $out/bin
-  '' + lib.optionalString (nixos-container != null) ''
-    substituteInPlace $out/bin/extra-container \
-       --replace 'exec nixos-container' 'exec ${nixos-container}/bin/nixos-container'
+    # We expect nix-build to be in PATH
+    scriptPath="export PATH=${lib.makeBinPath [ nixos-container ]}:\$PATH"
+    sed -i "2i$scriptPath" $out/bin/extra-container
   '';
 
   meta = with lib; {

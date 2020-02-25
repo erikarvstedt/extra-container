@@ -198,7 +198,7 @@ function errEcho() {
 }
 
 mutableServicesDir=/etc/systemd-mutable/system
-if [[ ! -e $mutableServicesDir ]]
+if [[ ! -e $mutableServicesDir ]]; then
    # Non-NixOS
    mutableServicesDir=/usr/lib/systemd/system
 fi

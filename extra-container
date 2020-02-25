@@ -3,10 +3,6 @@
 set -eo pipefail
 shopt -s nullglob
 
-nixosContainer() {
-    exec nixos-container "$@"
-}
-
 case $1 in
     ""|help|-h|--help)
         echo "Usage:"
@@ -111,7 +107,7 @@ case $1 in
         shift
         ;;
     *)
-        nixosContainer "$@"
+        exec nixos-container "$@"
         ;;
 esac
 
@@ -167,7 +163,7 @@ updateContainers() {
         systemPath=$(grep -ohP "(?<=^SYSTEM_PATH=).*" $confFile)
         # Shift output 2 spaces to the right
         echo "  Updating $container"
-        nixosContainer run $container -- bash -lc "${systemPath}/bin/switch-to-configuration test" |& sed 's/^/  /' || true
+        nixos-container run $container -- bash -lc "${systemPath}/bin/switch-to-configuration test" |& sed 's/^/  /' || true
         echo
     done
 }
@@ -259,7 +255,7 @@ if [[ $destroy ]]; then
         rm -f $gcRootsPath.conf
         # Create dummy confFile so that `nixos-container` doesn't quit
         touch $confFile
-        nixosContainer destroy $container
+        nixos-container destroy $container
     done
     [[ $needDaemonReload ]] && systemctl daemon-reload
     exit 0

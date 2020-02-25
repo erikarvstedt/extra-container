@@ -101,7 +101,7 @@ From now on, use only with `sudo`.
 ```
 extra-container create NIXOS_CONTAINER_CONFIG_FILE
                        [--attr|-A attrPath]
-                       [--nixos-path|--nixpkgs-path path]
+                       [--nixpkgs-path|--nixos-path path]
                        [--start|-s | --restart-changed|-r]
 
     NIXOS_CONTAINER_CONFIG_FILE is a NixOS config file with container

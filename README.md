@@ -168,3 +168,6 @@ All contributions and suggestions are welcome, even if they're minor or cosmetic
 For tests run `test.sh` or `run-tests-in-container.sh` to reduce interference with your main system.
 
 The tests add and remove temporary containers named `test-*` on the host system.
+
+When changing the `Usage` documentation in `extra-container`, run `./update-readme` to copy
+these changes to `README.md`.

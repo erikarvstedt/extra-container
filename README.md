@@ -74,8 +74,9 @@ in
 ```
 extra-container create NIXOS_CONTAINER_CONFIG_FILE
                        [--attr|-A attrPath]
-                       [--nixos-path path]
+                       [--nixpkgs-path|--nixos-path path]
                        [--start|-s | --restart-changed|-r]
+                       [--build-args arg...]
 
     NIXOS_CONTAINER_CONFIG_FILE is a NixOS config file with container
     definitions like 'containers.mycontainer = { ... }'
@@ -102,11 +103,17 @@ extra-container create NIXOS_CONTAINER_CONFIG_FILE
     --restart-changed | -r
       Restart running containers that have changed
 
+    --build-args arg...
+      All following args are passed to nix-build.
+      Must be the last option given.
+
     Example:
       extra-container create mycontainers.nix --restart-changed
 
       extra-container create mycontainers.nix --nixpkgs-path \
         'fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz'
+
+      extra-container create mycontainers.nix --start --build-args --builders 'ssh://worker - - 8'
 
 echo NIXOS_CONTAINER_CONFIG | extra-container create
     Read the container config from stdin
@@ -126,7 +133,7 @@ extra-container create STORE_PATH
       Create from nixos etc derivation
       extra-container create /nix/store/32..9j-etc
 
-extra-container build NIXOS_CONTAINER_CONFIG_FILE
+extra-container build ...
     Build the container config and print the resulting NixOS system etc path
 
     This command can be used like 'create', but options related

@@ -1,13 +1,17 @@
-{ stdenv, lib }:
+{ stdenv, lib,
+  pkgSrc ? lib.cleanSource ./. }:
 
 stdenv.mkDerivation rec {
   name = "extra-container-${version}";
   version = "0.3";
 
+  src = pkgSrc;
+
   buildCommand = ''
-    install -D ${./extra-container} $out/bin/extra-container
+    install -D $src/extra-container $out/bin/extra-container
     patchShebangs $out/bin
-    sed -i 's|evalConfig=.*|evalConfig=${./eval-config.nix}|' $out/bin/extra-container
+    install $src/eval-config.nix -Dt $out/src
+    sed -i "s|evalConfig=.*|evalConfig=$out/src/eval-config.nix|" $out/bin/extra-container
   '';
 
   meta = with lib; {

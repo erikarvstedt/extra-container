@@ -143,14 +143,14 @@ restartContainers() {
     # Retry terminating the container machines until the command succeeds
     # or the machines have disappeared
     for ((i = 1;; i++)); do
-        failed=''
+        failed=
         output=$(machinectl terminate $* 2>&1) || failed=1
         if [[ ! $failed || $output == *no*machine*known* ]]; then
             break
         fi
         echo $output
         if ((i == 20)); then
-            echo "Failed to stop containers."
+            errEcho "Failed to stop containers."
             exit 1
         fi
         sleep 0.001

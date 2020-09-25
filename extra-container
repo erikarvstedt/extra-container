@@ -246,7 +246,6 @@ if [[ $destroy ]]; then
         if [[ $failed && $output != *not\ loaded* ]]; then
             errEcho "Killing $service failed with: $output"
         fi
-        rm -f $confFile
         if [[ -L $serviceFile ]]; then
             rm $serviceFile
             needDaemonReload=1
@@ -254,7 +253,11 @@ if [[ $destroy ]]; then
         gcRootsPath=$(makeGCRootsPath $container)
         rm -f $gcRootsPath
         rm -f $gcRootsPath.conf
-        # Create dummy confFile so that `nixos-container` doesn't quit
+        # Remove declarative container confFile, otherwise `nixos-container` fails
+        # with 'cannot destroy declarative container'
+        rm -f $confFile
+        # Create dummy confFile, otherwise `nixos-container` stops before
+        # destroying the container completely
         touch $confFile
         nixos-container destroy $container
     done

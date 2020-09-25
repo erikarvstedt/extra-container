@@ -241,7 +241,11 @@ if [[ $destroy ]]; then
         serviceFile=${mutableServicesDir}/$service
         confFile=/etc/containers/$container.conf
 
-        systemctl stop $service || true
+        failed=
+        output=$(systemctl kill $service 2>&1) || failed=1
+        if [[ $failed && $output != *not\ loaded* ]]; then
+            errEcho "Killing $service failed with: $output"
+        fi
         rm -f $confFile
         if [[ -L $serviceFile ]]; then
             rm $serviceFile

@@ -241,7 +241,7 @@ if [[ $destroy ]]; then
         serviceFile=${mutableServicesDir}/$service
         confFile=/etc/containers/$container.conf
 
-        systemctl stop $service || true
+        systemctl kill $service || true
         rm -f $confFile
         if [[ -L $serviceFile ]]; then
             rm $serviceFile

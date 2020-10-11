@@ -160,9 +160,9 @@ needToBuildContainers() {
 }
 
 buildContainers() {
-    containerCfg=$1
-    tmpDir=$2
-    nixosPath=$3
+    local containerCfg=$1
+    local tmpDir=$2
+    local nixosPath=$3
 
     local cfg
     if [[ $attr ]]; then
@@ -176,7 +176,7 @@ buildContainers() {
 }
 
 restartContainers() {
-    services=$(getServiceNames $*)
+    local services=$(getServiceNames $*)
 
     # `systemctl restart <container>` is broken (https://github.com/NixOS/nixpkgs/issues/43652),
     # so use a workaraound
@@ -184,8 +184,8 @@ restartContainers() {
     # Retry terminating the container machines until the command succeeds
     # or the machines have disappeared
     for ((i = 1;; i++)); do
-        failed=
-        output=$(machinectl terminate $* 2>&1) || failed=1
+        local failed=
+        local output=$(machinectl terminate $* 2>&1) || failed=1
         if [[ ! $failed || $output == *no*machine*known* ]]; then
             break
         fi
@@ -201,8 +201,8 @@ restartContainers() {
 
 updateContainers() {
     for container in $*; do
-        confFile=/etc/containers/$container.conf
-        systemPath=$(grep -ohP "(?<=^SYSTEM_PATH=).*" $confFile)
+        local confFile=/etc/containers/$container.conf
+        local systemPath=$(grep -ohP "(?<=^SYSTEM_PATH=).*" $confFile)
         # Shift output 2 spaces to the right
         echo "  Updating $container"
         nixos-container run $container -- bash -lc "${systemPath}/bin/switch-to-configuration test" |& sed 's/^/  /' || true
@@ -306,7 +306,7 @@ destroyContainers() {
             rm $serviceFile
             needDaemonReload=1
         fi
-        gcRootsPath=$(makeGCRootsPath $container)
+        local gcRootsPath=$(makeGCRootsPath $container)
         rm -f $gcRootsPath
         rm -f $gcRootsPath.conf
         # Remove declarative container confFile, otherwise `nixos-container` fails

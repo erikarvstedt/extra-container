@@ -153,6 +153,16 @@ let
                     Only active when privateNetwork == true.
                   '';
                 };
+                enableSSH = mkOption {
+                  type = types.bool;
+                  default = builtins.getEnv("extraContainerSSH") == "1";
+                  description = ''
+                    Enable SSH access with an automatically generated key.
+                    This enables the 'cssh' comand in extra-container shell.
+
+                    Requires privateNetwork == true.
+                  '';
+                };
               };
             };
 
@@ -191,6 +201,14 @@ let
                         ''
                     );
                   }
+                  (mkIf config.extra.enableSSH {
+                     services.openssh.enable = containerAssert config.privateNetwork name ''
+-                      option extra.enableSSH requires privateNetwork to be enabled.
+-                    '' true;
+                     users.users.root.openssh.authorizedKeys.keyFiles = [
+                       /tmp/extra-container-ssh/key.pub
+                     ];
+                  })
                 ]);
               }
             ];

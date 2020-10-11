@@ -170,7 +170,7 @@ buildContainers() {
     else
         cfg="''$(realpath $containerCfg)''"
     fi
-    nix-build --out-link $tmpDir/result "${buildArgs[@]}" -E "
+    NIX_PATH=$NIX_PATH:pwd=$PWD nix-build --out-link $tmpDir/result "${buildArgs[@]}" -E "
       (import $evalConfig $nixosPath $cfg).config.system.build.etc
     " >/dev/null
 }

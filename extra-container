@@ -241,11 +241,21 @@ if [[ $destroy ]]; then
         serviceFile=${mutableServicesDir}/$service
         confFile=/etc/containers/$container.conf
 
-        failed=
-        output=$(systemctl kill $service 2>&1) || failed=1
-        if [[ $failed && $output != *not\ loaded* ]]; then
-            errEcho "Killing $service failed with: $output"
+        # Signal 'stop' before killing so that the killed container doesn't restart
+        local failed=
+        local unitLoaded=1
+        local output=$(systemctl stop --no-block $service 2>&1) || failed=1
+        if [[ $failed ]]; then
+            if [[ output == *not\ loaded* ]]; then
+                unitLoaded=
+            else
+                errEcho "Stopping $service failed with: $output"
+            fi
         fi
+        if [[ $unitLoaded ]]; then
+            systemctl kill $service || true
+        fi
+
         if [[ -L $serviceFile ]]; then
             rm $serviceFile
             needDaemonReload=1

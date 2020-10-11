@@ -104,6 +104,9 @@ case $1 in
         echo "        { containers.hello = { enableTun = true; config = {}; }; }"
         echo "      EOF"
         echo
+        echo "extra-container create --expr|-E <container-config>"
+        echo "    Provide container config as an argument"
+        echo
         echo "extra-container create <store-path>"
         echo "    Create containers from <store-path>/etc"
         echo
@@ -162,7 +165,7 @@ esac
 evalConfig=$(cd "${BASH_SOURCE[0]%/*}" && pwd)/eval-config.nix
 
 needToBuildContainers() {
-    [[ ! $1 || -f $1 || -e $1/default.nix ]]
+    [[ $containerExpr || ! $1 || -f $1 || -e $1/default.nix ]]
 }
 
 buildContainers() {
@@ -170,14 +173,13 @@ buildContainers() {
     local tmpDir=$2
     local nixosPath=$3
 
-    local cfg
+    local attrExpr=
     if [[ $attr ]]; then
-        cfg="(import ''$(realpath $containerCfg)'').\${''$attr''}"
-    else
-        cfg="''$(realpath $containerCfg)''"
+        attrExpr=".\${''$attr''}"
     fi
-    NIX_PATH=$NIX_PATH:pwd=$PWD nix-build --out-link $tmpDir/result "${buildArgs[@]}" -E "
-      (import $evalConfig $nixosPath $cfg).config.system.build.etc
+    NIX_PATH=$NIX_PATH:pwd=$PWD nix-build --out-link $tmpDir/result "${buildArgs[@]}" -E \
+    " let cfg = ($containerCfg)$attrExpr;
+      in (import $evalConfig $nixosPath cfg).config.system.build.etc
     " >/dev/null
 }
 
@@ -337,6 +339,7 @@ fi
 start=
 update=
 restart=
+containerExpr=
 attr=
 nixpkgsPath=
 nixosPath=
@@ -355,6 +358,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --restart|-r)
             restart=1
+            ;;
+        --expr|-E)
+            containerExpr="$1"
+            shift
             ;;
         --attr|-A)
             attr="$1"
@@ -382,25 +389,30 @@ set -- "${args[@]}"
 ## 1. Build containers if needed
 
 if needToBuildContainers "$1"; then
-    tmpDir=$(mktemp -d)
-    trap "rm -r $tmpDir" EXIT
-
-    if [[ ! $1 || $1 == - ]]; then
-        # Read container cfg from stdin
-        containerCfg=$tmpDir/container-cfg.nix
-        cat > $containerCfg
-    else
-        containerCfg="$1"
+    if [[ ! $containerExpr ]]; then
+        if [[ ! $1 || $1 == - ]]; then
+            # Read container cfg from stdin
+            if [[ $shell ]]; then
+                errEcho "Reading container config from STDIN is not supported for command 'shell'"
+                exit 1
+            fi
+            read -d '' containerExpr || true
+        else
+            containerExpr="import ''$(realpath "$1")''"
+        fi
     fi
     if [[ ! $nixosPath ]]; then
         if [[ $nixpkgsPath ]]; then
-            nixosPath="\"\${toString $nixpkgsPath}/nixos\""
+            nixosPath="\"\${toString ($nixpkgsPath)}/nixos\""
         else
             nixosPath="<nixpkgs/nixos>"
         fi
     fi
+    tmpDir=$(mktemp -d)
+    trap "rm -r $tmpDir" EXIT
+
     errEcho "Building containers..."
-    buildContainers "$containerCfg" $tmpDir "$nixosPath"
+    buildContainers "$containerExpr" $tmpDir "$nixosPath"
     nixosSystemEtc=$tmpDir/result/etc
 
     if [[ $onlyBuild ]]; then

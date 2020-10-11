@@ -54,8 +54,14 @@ nixos-container status demo
 sudo extra-container destroy demo
 ```
 
+## Changelog
+
+ [`CHANGELOG.md`](CHANGELOG.md)
+
 ## Install
 
+
+#### On NixOS
 ```nix
 { pkgs, ... }:
 let
@@ -73,15 +79,135 @@ in
 }
 ```
 
+#### On other systemd-based Linux distros
+
+```bash
+git clone https://github.com/erikarvstedt/extra-container
+# Calls sudo during install
+extra-container/util/install.sh
+```
+[`install.sh`](util/install.sh) installs `extra-container` to the root nix user profile
+and edits `/etc/sudoers` to enable running `extra-container` with sudo.
+
+## More features
+
+### Shell
+
+Command `shell` starts a container shell session.
+The shell provides helper functions for interacting with the container. The container is destroyed when exiting the shell.
+
+This config uses `extra` options that are [explained below](#private-network-helper). 
+```bash
+read -d '' src <<'EOF' || true
+{
+  containers.demo = {
+    extra.addressPrefix = "10.250.0"; # Sets up a private network.
+    extra.enableWAN = true;
+  };
+}
+EOF
+# Provide container config via `-E` instead of stdin because the shell requires
+# access to the terminal's stdin.
+$([[ $EUID = 0 ]] || echo sudo) extra-container shell -E "$src" --ssh
+```
+
+An example shell session
+```
+...
+Starting shell.
+Enter "h" for documentation.
+
+$ h
+Container address: 10.250.0.2 ($ip)
+Container filesystem: /var/lib/containers/demo
+
+Run "c COMMAND" to execute a command in the container
+Run "c" to start a shell session inside the container
+Run "cssh" for SSH
+
+# Container internet access, enabled via option `extra.enableWAN`
+$ c curl example.com
+<!doctype html>
+<html>
+...
+
+# Connect with SSH, enabled by `--ssh`
+$ cssh hostname
+demo
+```
+
+#### Run commands
+
+Run a command in a shell session and exit. The container is destroyed afterwards.
+```bash
+cfg='{ containers.demo.config = {}; }'
+sudo extra-container shell -E "$cfg" --run c hostname
+# => demo
+```
+
+Start a shell inside the container.
+```bash
+cfg='{ containers.demo.config = {}; }'
+sudo extra-container shell -E "$cfg" --run c
+```
+
+#### Repeated calls to `extra-container shell`
+When `extra-container shell` detects that it is already running in a container shell session, it updates the running container instead of destroying and restarting it and starting a new shell.  
+To prevent `sudo` from clearing the environment variables that are needed for shell detection, run `sudo` only on the first, non-root call to `extra-container`, like this:
+```bash
+$([[ $EUID = 0 ]] || echo sudo) extra-container shell myconfig.nix
+```
+To force container destruction inside a shell session, use `extra-container shell --destroy|-d`.
+
+#### Disable auto-destruction
+By default, `shell` destroys the shell container before starting and before exiting.
+This ensures that containers start with no leftover filesystem state from
+previous runs and that containers do not consume system resources after use.  
+To disable auto-destructing containers, run
+`extra-container shell --no-destroy|-n`
+
+
+### Private network helper
+
+Container options `extra.*` are defined by `extra-container` and help with setting up private network containers.  
+See [eval-config.nix](./eval-config.nix) for full option descriptions.
+```nix
+containers.demo = {
+  extra = {
+    # Sets
+    # privateNetwork = true
+    # hostAddress = "${addressPrefix}.1"
+    # localAddress = "${addressPrefix}.2"
+    addressPrefix = "10.250.0";
+
+    # Enable internet access for the container
+    enableWAN = true;
+    # Always allow connections from hostAddress
+    firewallAllowHost = true;
+    # Make the container's localhost reachable via localAddress
+    exposeLocalhost = true;
+  }
+};
+```
+
+### Access working dir in non-file configs
+
+`extra-container` appends `pwd` to `NIX_PATH` to allow configs given via `--expr|-E`
+or via stdin to access the working directory.
+```bash
+extra-container create -E '{ imports = [ <pwd/myfile.nix> ]; ... }'
+```
+
 ## Usage
 ```
-extra-container create NIXOS_CONTAINER_CONFIG_FILE
+extra-container create <container-config-file>
                        [--attr|-A attrPath]
                        [--nixpkgs-path|--nixos-path path]
                        [--start|-s | --restart-changed|-r]
+                       [--ssh]
                        [--build-args arg...]
 
-    NIXOS_CONTAINER_CONFIG_FILE is a NixOS config file with container
+    <container-config-file> is a NixOS config file with container
     definitions like 'containers.mycontainer = { ... }'
 
     --attr | -A attrPath
@@ -106,6 +232,12 @@ extra-container create NIXOS_CONTAINER_CONFIG_FILE
     --restart-changed | -r
       Restart running containers that have changed
 
+    --ssh
+      Generate SSH keys in /tmp and enable container SSH access.
+      The key files remain after exit and are reused on subsequent runs.
+      Unlocks the function 'cssh' in 'extra-container shell'.
+      Requires container option 'privateNetwork = true'.
+
     --build-args arg...
       All following args are passed to nix-build.
       Must be the last option given.
@@ -118,7 +250,7 @@ extra-container create NIXOS_CONTAINER_CONFIG_FILE
 
       extra-container create mycontainers.nix --start --build-args --builders 'ssh://worker - - 8'
 
-echo NIXOS_CONTAINER_CONFIG | extra-container create
+echo <container-config> | extra-container create
     Read the container config from stdin
 
     Example:
@@ -126,8 +258,11 @@ echo NIXOS_CONTAINER_CONFIG | extra-container create
         { containers.hello = { enableTun = true; config = {}; }; }
       EOF
 
-extra-container create STORE_PATH
-    Create containers from STORE_PATH/etc
+extra-container create --expr|-E <container-config>
+    Provide container config as an argument
+
+extra-container create <store-path>
+    Create containers from <store-path>/etc
 
     Examples:
       Create from nixos system derivation
@@ -135,6 +270,23 @@ extra-container create STORE_PATH
 
       Create from nixos etc derivation
       extra-container create /nix/store/32..9j-etc
+
+extra-container shell ...
+    Start a container shell session.
+    See the README for a complete documentation.
+    Supports all arguments from 'create'
+
+    Extra arguments:
+      --run <cmd> <arg>...
+        Run command in shell session and exit
+      --no-destroy|-n
+        Do not destroy shell container before and after running
+      --destroy|-d
+        If running inside an existing shell session, force container to
+        be destroyed before and after running
+
+    Example:
+      extra-container shell -E '{ containers.demo.config = {}; }'
 
 extra-container build ...
     Build the container config and print the resulting NixOS system etc path
@@ -145,15 +297,15 @@ extra-container build ...
 extra-container list
     List all extra containers
 
-extra-container restart CONTAINER...
+extra-container restart <container>...
     Fixes the broken restart command of nixos-container (nixpkgs issue #43652)
 
-extra-container destroy CONTAINER...
+extra-container destroy <container>...
 
 extra-container destroy --all|-a
     Destroy all extra containers
 
-extra-container CMD ARGS...
+extra-container <cmd> <arg>...
     All other commands are forwarded to nixos-container
 ```
 

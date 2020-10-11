@@ -230,7 +230,7 @@ fi
 # Command 'destroy containers'
 #------------------------------------------------------------------------------
 
-if [[ $destroy ]]; then
+destroyContainers() {
     if [[ ! $1 ]]; then
         errEcho "No container name specified"
         exit 1
@@ -241,6 +241,13 @@ if [[ $destroy ]]; then
     else
         containers="$*"
     fi
+
+    if [[ ! -e /etc/containers ]]; then
+        # No containers installed. The containers dir is needed by the code below.
+        return
+    fi
+
+    local needDaemonReload=
 
     for container in $containers; do
         service=container@${container}.service
@@ -275,9 +282,15 @@ if [[ $destroy ]]; then
         # Create dummy confFile, otherwise `nixos-container` stops before
         # destroying the container completely
         touch $confFile
-        nixos-container destroy $container
+        nixos-container destroy $container || true
     done
-    [[ $needDaemonReload ]] && systemctl daemon-reload
+    if [[ $needDaemonReload ]]; then
+        systemctl daemon-reload
+    fi
+}
+
+if [[ $destroy ]]; then
+    destroyContainers "$@"
     exit 0
 fi
 

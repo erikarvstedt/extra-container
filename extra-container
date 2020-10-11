@@ -47,13 +47,13 @@ case $1 in
     ""|help|-h|--help)
         echo "Usage:"
         echo
-        echo "extra-container create NIXOS_CONTAINER_CONFIG_FILE"
+        echo "extra-container create <container-config-file>"
         echo "                       [--attr|-A attrPath]"
         echo "                       [--nixpkgs-path|--nixos-path path]"
         echo "                       [--start|-s | --restart-changed|-r]"
         echo "                       [--build-args arg...]"
         echo
-        echo "    NIXOS_CONTAINER_CONFIG_FILE is a NixOS config file with container"
+        echo "    <container-config-file> is a NixOS config file with container"
         echo "    definitions like 'containers.mycontainer = { ... }'"
         echo
         echo "    --attr | -A attrPath"
@@ -90,7 +90,7 @@ case $1 in
         echo
         echo "      extra-container create mycontainers.nix --start --build-args --builders 'ssh://worker - - 8'"
         echo
-        echo "echo NIXOS_CONTAINER_CONFIG | extra-container create"
+        echo "echo <container-config> | extra-container create"
         echo "    Read the container config from stdin"
         echo
         echo "    Example:"
@@ -98,8 +98,8 @@ case $1 in
         echo "        { containers.hello = { enableTun = true; config = {}; }; }"
         echo "      EOF"
         echo
-        echo "extra-container create STORE_PATH"
-        echo "    Create containers from STORE_PATH/etc"
+        echo "extra-container create <store-path>"
+        echo "    Create containers from <store-path>/etc"
         echo
         echo "    Examples:"
         echo "      Create from nixos system derivation"
@@ -117,15 +117,15 @@ case $1 in
         echo "extra-container list"
         echo "    List all extra containers"
         echo
-        echo "extra-container restart CONTAINER..."
+        echo "extra-container restart <container>..."
         echo "    Fixes the broken restart command of nixos-container (nixpkgs issue #43652)"
         echo
-        echo "extra-container destroy CONTAINER..."
+        echo "extra-container destroy <container>..."
         echo
         echo "extra-container destroy --all|-a"
         echo "    Destroy all extra containers"
         echo
-        echo "extra-container CMD ARGS..."
+        echo "extra-container <cmd> <arg>..."
         echo "    All other commands are forwarded to nixos-container"
         exit 0
         ;;
@@ -178,7 +178,7 @@ buildContainers() {
 restartContainers() {
     services=$(getServiceNames $*)
 
-    # `systemctl restart CONTAINER` is broken (https://github.com/NixOS/nixpkgs/issues/43652),
+    # `systemctl restart <container>` is broken (https://github.com/NixOS/nixpkgs/issues/43652),
     # so use a workaraound
     systemctl stop $services
     # Retry terminating the container machines until the command succeeds

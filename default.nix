@@ -1,5 +1,6 @@
-{ stdenv, lib,
-  pkgSrc ? lib.cleanSource ./. }:
+{ stdenv, lib, nixos-container, glibcLocales
+, pkgSrc ? lib.cleanSource ./.
+}:
 
 stdenv.mkDerivation rec {
   name = "extra-container-${version}";
@@ -12,7 +13,15 @@ stdenv.mkDerivation rec {
     patchShebangs $out/bin
     share=$out/share/extra-container
     install $src/eval-config.nix -Dt $share
-    sed -i "s|evalConfig=.*|evalConfig=$share/eval-config.nix|" $out/bin/extra-container
+
+    # Use existing PATH for systemctl and machinectl
+    scriptPath="export PATH=${lib.makeBinPath [ nixos-container ]}:\$PATH"
+
+    sed -i \
+      -e "s|evalConfig=.*|evalConfig=$share/eval-config.nix|" \
+      -e "s|LOCALE_ARCHIVE=.*|LOCALE_ARCHIVE=${glibcLocales}/lib/locale/locale-archive|" \
+      -e "2i$scriptPath" \
+      $out/bin/extra-container
   '';
 
   meta = with lib; {

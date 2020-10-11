@@ -3,6 +3,11 @@
 set -eo pipefail
 shopt -s nullglob
 
+onlyBuild=
+list=
+restart=
+destroy=
+
 case $1 in
     ""|help|-h|--help)
         echo "Usage:"
@@ -278,7 +283,15 @@ fi
 ## Command 'create container'
 #------------------------------------------------------------------------------
 
+start=
+update=
+restart=
+attr=
+nixpkgsPath=
+nixosPath=
+buildArgs=()
 args=()
+
 while [[ $# -gt 0 ]]; do
     arg="$1"
     shift

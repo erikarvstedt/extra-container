@@ -3,6 +3,47 @@
 set -eo pipefail
 shopt -s nullglob
 
+function errEcho() { >&2 echo "$*"; }
+
+## Operating system specific setup
+
+[[ -e /run/booted-system/nixos-version ]] && isNixOS=1 || isNixOS=
+
+if [[ $isNixOS ]]; then
+    mutableServicesDir=/etc/systemd-mutable/system
+else
+    # This is the canonical way to check for systemd
+    # https://www.freedesktop.org/software/systemd/man/sd_booted.html
+    if [[ ! -e /run/systemd/system ]]; then
+        errEcho "extra-container requires systemd"
+        exit 1
+    fi
+    if ! type -P machinectl > /dev/null; then
+        errEcho "extra-container requires machinectl to be installed"
+        exit 1
+    fi
+    if [[ ! -e /nix/var/nix/profiles/default ]]; then
+        errEcho "extra-container requires a multi-user nix installation."
+        exit 1
+    fi
+
+    mutableServicesDir=/usr/lib/systemd/system
+
+    # For nixos-container on non-NixOS systems https://github.com/NixOS/nix/issues/599#issuecomment-153885553
+    # The value of 'LOCALE_ARCHIVE' is inserted by the builder (./default.nix)
+    if [[ ! -v LOCALE_ARCHIVE ]]; then
+        export LOCALE_ARCHIVE=
+    fi
+
+    # Work around https://github.com/NixOS/nixpkgs/issues/28833
+    createOsReleaseFile() {
+        if [[ ! -f /etc/static/os-release ]]; then
+            mkdir -p /etc/static
+            echo "# added by extra-container" > /etc/static/os-release
+        fi
+    }
+fi
+
 onlyBuild=
 list=
 restart=
@@ -200,12 +241,6 @@ makeGCRootsPath() {
     echo /nix/var/nix/gcroots/auto/extra-container-$1
 }
 
-function errEcho() {
-    >&2 echo "$*"
-}
-
-mutableServicesDir=/etc/systemd-mutable/system
-
 # Command 'list extra containers'
 #------------------------------------------------------------------------------
 
@@ -392,10 +427,11 @@ for service in $services; do
 done
 allContainers=($(printf '%s\n' ${allContainers[@]} | sort))
 
-mkdir -p $mutableServicesDir /etc/containers /nix/var/nix/gcroots/auto/
-
 echo
 echo "Installing containers:"
+
+mkdir -p $mutableServicesDir /etc/containers /nix/var/nix/gcroots/auto/
+if [[ ! $isNixOS ]]; then createOsReleaseFile; fi
 
 confWithoutSystem() {
     sed /^SYSTEM_PATH=/d $1

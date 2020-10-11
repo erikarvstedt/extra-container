@@ -53,6 +53,7 @@ case $1 in
         echo "                       [--attr|-A attrPath]"
         echo "                       [--nixpkgs-path|--nixos-path path]"
         echo "                       [--start|-s | --restart-changed|-r]"
+        echo "                       [--ssh]"
         echo "                       [--build-args arg...]"
         echo
         echo "    <container-config-file> is a NixOS config file with container"
@@ -79,6 +80,12 @@ case $1 in
         echo
         echo "    --restart-changed | -r"
         echo "      Restart running containers that have changed"
+        echo
+        echo "    --ssh"
+        echo "      Generate SSH keys in /tmp and enable container SSH access."
+        echo "      The key files remain after exit and are reused on subsequent runs."
+        echo "      Unlocks the function 'cssh' in 'extra-container shell'."
+        echo "      Requires container option 'privateNetwork = true'."
         echo
         echo "    --build-args arg..."
         echo "      All following args are passed to nix-build."
@@ -260,6 +267,21 @@ makeGCRootsPath() {
     echo /nix/var/nix/gcroots/auto/extra-container-$1
 }
 
+# The key is reused between extra-container sessions
+makeSSHKey() {
+    local keyDir=/tmp/extra-container-ssh
+    sshKey=$keyDir/key
+    if [[ ! (-d $keyDir && $(stat -c '%a%U' $keyDir) == 700root &&
+                 -f $sshKey && -f $sshKey.pub) ]]; then
+        if [[ -e $keyDir ]]; then
+            rm -rf $keyDir
+        fi
+        mkdir -m 700 $keyDir
+        ssh-keygen -t ed25519 -P '' -C none -f $sshKey > /dev/null
+    fi
+    chmod 600 $sshKey
+}
+
 makeTmpDir() {
     if [[ ! $tmpDir ]]; then
         tmpDir=$(mktemp -d /tmp/extra-container.XXX)
@@ -378,6 +400,7 @@ fi
 start=
 update=
 restart=
+ssh=
 containerExpr=
 attr=
 nixpkgsPath=
@@ -401,6 +424,9 @@ while [[ $# > 0 ]]; do
             ;;
         --restart|-r)
             restart=1
+            ;;
+        --ssh)
+            ssh=1
             ;;
         --expr|-E)
             containerExpr="$1"
@@ -445,6 +471,11 @@ done
 set -- "${args[@]}"
 
 ## 1. Build containers if needed
+
+if [[ $ssh ]]; then
+    makeSSHKey
+fi
+export extraContainerSSH=$ssh
 
 if needToBuildContainers "$1"; then
     if [[ ! $containerExpr ]]; then
@@ -601,6 +632,19 @@ handleShell() {
             nixos-container root-login $name
         fi
     }
+    if [[ $extraContainerSSH ]]; then
+        makeTmpDir
+        export sshKey
+        export sshControlPath=$tmpDir/ssh-connection
+        extraContainerSSHCmd() {
+            ssh -i $sshKey -o ConnectTimeout=2 \
+                -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \
+                -o ControlMaster=auto -o ControlPath="$sshControlPath" -o ControlPersist=60 \
+                root@$ip "$@"
+        }
+        export -f extraContainerSSHCmd
+
+    fi
     extraContainerHelp() {
         if [[ $ip ]]; then
             echo "Container address: $ip (\$ip)"
@@ -609,6 +653,9 @@ handleShell() {
         echo
         echo 'Run "c COMMAND" to execute a command in the container'
         echo 'Run "c" to start a shell session inside the container'
+        if [[ $extraContainerSSH ]]; then
+            echo 'Run "cssh" for SSH'
+        fi
     }
     export -f extraContainerCmd extraContainerHelp
 
@@ -616,6 +663,10 @@ handleShell() {
       function h() { extraContainerHelp; }
       function c() { extraContainerCmd "$@"; }
       export -f h c
+      if [[ $extraContainerSSH ]]; then
+        function cssh() { extraContainerSSHCmd "$@"; }
+        export -f cssh
+      fi
       export name=$runningShellContainer
       export ip=$containerIp
     '
@@ -632,7 +683,7 @@ handleShell() {
         # /etc/profile (and consequently .bashrc) before evaluating the custom rcfile.
         # Use --rcfile to define one-letter functions that may have been redefined
         # by the user's config if we had just exported them.
-        bash --rcfile <(echo "unalias h c 2>/dev/null; $defineShortcuts")
+        bash --rcfile <(echo "unalias h c cssh 2>/dev/null; $defineShortcuts")
     fi
 
     # Needed when called from the SIGINT handler

@@ -25,16 +25,17 @@ cleanup
 
 #
 
-nixpkgs=$(nix eval --raw '(<nixpkgs>)')
+nixpkgs=$(nix eval --raw '(toString <nixpkgs>)')
 
 extra-container create -s <<EOF
 { config, pkgs, lib, ... }:
 {
   containers.test-extra-container = {
     bindMounts."/extra-container".hostPath = "$scriptDir";
+    bindMounts."/nixpkgs".hostPath = "$nixpkgs";
     config.environment = {
       systemPackages = [ pkgs.nixos-container ];
-      variables.NIX_PATH = lib.mkForce "nixpkgs=$nixpkgs";
+      variables.NIX_PATH = lib.mkForce "nixpkgs=/nixpkgs";
     };
   };
 }

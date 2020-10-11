@@ -10,8 +10,9 @@ stdenv.mkDerivation rec {
   buildCommand = ''
     install -D $src/extra-container $out/bin/extra-container
     patchShebangs $out/bin
-    install $src/eval-config.nix -Dt $out/src
-    sed -i "s|evalConfig=.*|evalConfig=$out/src/eval-config.nix|" $out/bin/extra-container
+    share=$out/share/extra-container
+    install $src/eval-config.nix -Dt $share
+    sed -i "s|evalConfig=.*|evalConfig=$share/eval-config.nix|" $out/bin/extra-container
   '';
 
   meta = with lib; {

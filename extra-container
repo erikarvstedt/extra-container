@@ -117,6 +117,7 @@ case $1 in
         ;;
 esac
 
+# Value is replaced by builder (./default.nix)
 evalConfig=$(cd "${BASH_SOURCE[0]%/*}" && pwd)/eval-config.nix
 
 needToBuildContainers() {

@@ -22,11 +22,6 @@ sudo extra-container create --start <<'EOF'
     localAddress = "10.250.0.2";
 
     config = { pkgs, ... }: {
-      # Reduce evaluation time. Not needed for NixOS ≥ 20.03
-      documentation.nixos.enable = false;
-
-      networking.firewall.allowedTCPPorts = [ 50 ];
-
       systemd.services.hello = {
         wantedBy = [ "multi-user.target" ];
         script = ''
@@ -35,6 +30,7 @@ sudo extra-container create --start <<'EOF'
           done
         '';
       };
+      networking.firewall.allowedTCPPorts = [ 50 ];
     };
   };
 }

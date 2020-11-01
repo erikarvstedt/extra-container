@@ -489,6 +489,15 @@ while [[ $# > 0 ]]; do
 done
 set -- "${args[@]}"
 
+if [[ ! $containerExpr ]]; then
+    arg=${1:-}
+    shift || true
+fi
+if [[ $# > 0 ]]; then
+    errEcho "Error: Unhandled arguments: $*"
+    exit 1
+fi
+
 ## 1. Build containers if needed
 
 if [[ $ssh ]]; then
@@ -501,9 +510,9 @@ needToBuildContainers() {
     [[ $containerExpr || ! $1 || -f $1 || -e $1/default.nix ]]
 }
 
-if needToBuildContainers "$1"; then
+if needToBuildContainers "$arg"; then
     if [[ ! $containerExpr ]]; then
-        if [[ ! $1 || $1 == - ]]; then
+        if [[ ! $arg || $arg == - ]]; then
             # Read container cfg from stdin
             if [[ $shell ]]; then
                 errEcho "Reading container config from STDIN is not supported for command 'shell'"
@@ -511,7 +520,7 @@ if needToBuildContainers "$1"; then
             fi
             read -d '' containerExpr || true
         else
-            containerExpr="import ''$(realpath "$1")''"
+            containerExpr="import ''$(realpath "$arg")''"
         fi
     fi
     if [[ ! $nixosPath ]]; then
@@ -531,7 +540,7 @@ if needToBuildContainers "$1"; then
         exit 0
     fi
 else
-    nixosSystemEtc="$1/etc"
+    nixosSystemEtc="$arg/etc"
     if [[ ! -e $nixosSystemEtc ]]; then
         errEcho "$nixosSystemEtc doesn't exist"
         exit 1

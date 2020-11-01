@@ -276,10 +276,10 @@ while [[ $# -gt 0 ]]; do
         --start|-s)
             start=1
             ;;
-        --update|-u)
+        --update-changed|-u)
             update=1
             ;;
-        --restart|-r)
+        --restart-changed|-r)
             restart=1
             ;;
         --attr|-A)

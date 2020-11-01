@@ -320,7 +320,7 @@ if needToBuildContainers "$1"; then
     fi
     if [[ ! $nixosPath ]]; then
         if [[ $nixpkgsPath ]]; then
-            nixosPath="\"\${$nixpkgsPath}/nixos\""
+            nixosPath="\"\${toString $nixpkgsPath}/nixos\""
         else
             nixosPath="<nixpkgs/nixos>"
         fi

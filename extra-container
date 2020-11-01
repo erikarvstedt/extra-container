@@ -3,11 +3,6 @@
 set -eo pipefail
 shopt -s nullglob
 
-onlyBuild=
-list=
-restart=
-destroy=
-
 case $1 in
     ""|help|-h|--help)
         echo "Usage:"
@@ -94,6 +89,24 @@ case $1 in
         echo "    All other commands are forwarded to nixos-container"
         exit 0
         ;;
+esac
+
+# Run as root if needed
+#------------------------------------------------------------------------------
+
+if [[ $EUID != 0 ]]; then
+    exec sudo PATH="$PATH" NIX_PATH="$NIX_PATH" "${BASH_SOURCE[0]}" "$@"
+fi
+
+# Parse and run command
+#------------------------------------------------------------------------------
+
+onlyBuild=
+list=
+restart=
+destroy=
+
+case $1 in
     create|add)
         shift
         ;;
@@ -212,11 +225,6 @@ mutableServicesDir=/etc/systemd-mutable/system
 if [[ $list ]]; then
     getContainers
     exit 0
-fi
-
-if [[ $EUID != 0 ]]; then
-   errEcho "This command must be run as root"
-   exit 1
 fi
 
 # Command 'restart container'

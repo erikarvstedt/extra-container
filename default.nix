@@ -3,7 +3,7 @@
 }:
 
 stdenv.mkDerivation rec {
-  name = "extra-container-${version}";
+  pname = "extra-container";
   version = "0.5";
 
   src = pkgSrc;

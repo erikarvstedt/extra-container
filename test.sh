@@ -110,12 +110,29 @@ EOF
 testMatches "$output" "*Updating*test-1*Restarting*test-2*"
 
 #
+echo "Test shell run"
+
+read -d '' src <<EOF || true
+{ config, pkgs, ... }:
+{
+  containers.test-1 = {
+    $baseConfig;
+  };
+}
+EOF
+output=$(extra-container shell -E "$src" --run c uname -a)
+testMatches "$output" "*Linux test*"
+
+# Container should be destroyed after running
+[[ ! -e /var/lib/containers/test-1 ]]
+
+#
 echo "Test manual build"
 
 storePath=$(extra-container build <<EOF
 { config, pkgs, ... }:
 {
-  containers.test-3 = {
+  containers.test-1 = {
       $baseConfig;
   };
 }
@@ -125,13 +142,13 @@ EOF
 testMatches "$storePath" "/nix/store/*"
 
 output=$(extra-container create -s $storePath)
-testMatches "$output" "*Starting*test-3*"
+testMatches "$output" "*Starting*test-1*"
 
 #
 echo "Test list"
 
 output=$(extra-container list | grep ^test- || true)
-testMatches "$output" "test-1*test-2*test-3"
+testMatches "$output" "test-1*test-2"
 
 #
 echo "Test destroy"

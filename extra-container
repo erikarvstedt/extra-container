@@ -210,10 +210,6 @@ esac
 # Value is replaced by builder (./default.nix)
 evalConfig=$(cd "${BASH_SOURCE[0]%/*}" && pwd)/eval-config.nix
 
-needToBuildContainers() {
-    [[ $containerExpr || ! $1 || -f $1 || -e $1/default.nix ]]
-}
-
 buildContainers() {
     local containerCfg=$1
     local tmpDir=$2
@@ -500,6 +496,10 @@ if [[ $ssh ]]; then
 fi
 # This env var is read by ./eval-config.nix while building
 export extraContainerSSH=$ssh
+
+needToBuildContainers() {
+    [[ $containerExpr || ! $1 || -f $1 || -e $1/default.nix ]]
+}
 
 if needToBuildContainers "$1"; then
     if [[ ! $containerExpr ]]; then

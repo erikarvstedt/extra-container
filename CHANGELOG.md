@@ -1,4 +1,4 @@
-# 0.5 (unreleased)
+# 0.5 (2020-11-01)
 - Enhancements. (See the [README](README.md) for full documentation.)
   - Add generic support for systemd-based Linux distros.
   - Add command `shell`.

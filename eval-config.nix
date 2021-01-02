@@ -203,8 +203,8 @@ let
                   }
                   (mkIf config.extra.enableSSH {
                      services.openssh.enable = containerAssert config.privateNetwork name ''
--                      option extra.enableSSH requires privateNetwork to be enabled.
--                    '' true;
+                       option extra.enableSSH requires privateNetwork to be enabled.
+                     '' true;
                      users.users.root.openssh.authorizedKeys.keyFiles = [
                        /tmp/extra-container-ssh/key.pub
                      ];

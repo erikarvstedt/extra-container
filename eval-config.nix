@@ -187,7 +187,7 @@ let
                         ''
                         ''
                           ${pkgs.procps}/bin/sysctl -w net.ipv4.conf.all.route_localnet=1
-                          ${pkgs.iptables}/bin/iptables -t nat -I PREROUTING -p tcp \
+                          ${pkgs.iptables}/bin/iptables -w -t nat -I PREROUTING -p tcp \
                             -d ${config.localAddress} ! --dport 80 -j DNAT --to-destination 127.0.0.1
                         '';
                     };

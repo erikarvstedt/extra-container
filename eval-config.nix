@@ -23,47 +23,47 @@ let
     if builtins.pathExists new then new else old;
 
   dummyOptions = { lib, ... }: let
-      optionValue = default: lib.mkOption { inherit default; };
-      dummy = optionValue [];
-    in {
-      options = {
-        boot.kernel.sysctl = dummy;
-        boot.kernelModules = dummy;
-        boot.kernelParams = dummy;
-        environment.systemPackages = dummy;
-        networking.dhcpcd.denyInterfaces = dummy;
-        networking.extraHosts = dummy;
-        networking.proxy.envVars = optionValue {};
-        security = dummy;
-        services = {
-          dbus = dummy;
-          udev = dummy;
-          rsyslogd.enable = optionValue false;
-          syslog-ng.enable = optionValue false;
-        };
-        system.activationScripts = dummy;
-        system.path = optionValue "";
-        system.nssDatabases = dummy;
-        system.nssModules = dummy;
-        system.requiredKernelConfig = dummy;
-        ids.gids.keys = dummy;
-        ids.gids.systemd-journal = dummy;
-        ids.gids.systemd-journal-gateway = dummy;
-        ids.uids.systemd-journal-gateway = dummy;
-        ids.gids.systemd-network = dummy;
-        ids.uids.systemd-network = dummy;
-        ids.uids.systemd-resolve = dummy;
-        ids.gids.systemd-resolve = dummy;
-        users.users.systemd-network.uid = dummy;
-        users.users.systemd-resolve.uid = dummy;
-        users.users.systemd-journal-gateway.uid = dummy;
-        users.groups.systemd-network.gid = dummy;
-        users.groups.systemd-resolve.gid = dummy;
-        users.groups.keys.gid = dummy;
-        users.groups.systemd-journal.gid = dummy;
-        users.groups.systemd-journal-gateway.gid = dummy;
+    optionValue = default: lib.mkOption { inherit default; };
+    dummy = optionValue [];
+  in {
+    options = {
+      boot.kernel.sysctl = dummy;
+      boot.kernelModules = dummy;
+      boot.kernelParams = dummy;
+      environment.systemPackages = dummy;
+      networking.dhcpcd.denyInterfaces = dummy;
+      networking.extraHosts = dummy;
+      networking.proxy.envVars = optionValue {};
+      security = dummy;
+      services = {
+        dbus = dummy;
+        udev = dummy;
+        rsyslogd.enable = optionValue false;
+        syslog-ng.enable = optionValue false;
       };
+      system.activationScripts = dummy;
+      system.path = optionValue "";
+      system.nssDatabases = dummy;
+      system.nssModules = dummy;
+      system.requiredKernelConfig = dummy;
+      ids.gids.keys = dummy;
+      ids.gids.systemd-journal = dummy;
+      ids.gids.systemd-journal-gateway = dummy;
+      ids.uids.systemd-journal-gateway = dummy;
+      ids.gids.systemd-network = dummy;
+      ids.uids.systemd-network = dummy;
+      ids.uids.systemd-resolve = dummy;
+      ids.gids.systemd-resolve = dummy;
+      users.users.systemd-network.uid = dummy;
+      users.users.systemd-resolve.uid = dummy;
+      users.users.systemd-journal-gateway.uid = dummy;
+      users.groups.systemd-network.gid = dummy;
+      users.groups.systemd-resolve.gid = dummy;
+      users.groups.keys.gid = dummy;
+      users.groups.systemd-journal.gid = dummy;
+      users.groups.systemd-journal-gateway.gid = dummy;
     };
+  };
 
   containerAssert = cond: name: msg: value:
     if cond then value

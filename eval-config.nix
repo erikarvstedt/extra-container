@@ -61,6 +61,7 @@ let
       options = {
         boot.kernel.sysctl = dummy;
         boot.kernelModules = dummy;
+        boot.kernelParams = dummy;
         environment.systemPackages = dummy;
         networking.dhcpcd.denyInterfaces = dummy;
         networking.extraHosts = dummy;

@@ -3,58 +3,26 @@ nixosPath: systemConfig:
 let
   nixos = toString nixosPath;
 
-  baseModules = if builtins.pathExists "${nixos}/modules/virtualisation/nixos-containers.nix"
-                then baseModulesLatest
-                else baseModules_20_03;
-
-  # Minimal module sets for evaluating container configs.
-  # They significantly reduce extra-container evaluation overhead (total eval time - container eval time)
-
-  # Compatible with nixpkgs 16.09-20.03 (inclusive)
-  baseModules_20_03 = [
+  # A minimal module set for evaluating container configs.
+  # This significantly reduces extra-container evaluation overhead (total eval time - container eval time)
+  # Compatible with nixpkgs >= 16.09
+  baseModules = [
     "${nixos}/modules/misc/assertions.nix"
     "${nixos}/modules/misc/nixpkgs.nix"
     "${nixos}/modules/system/activation/top-level.nix"
     "${nixos}/modules/system/etc/etc.nix"
     "${nixos}/modules/system/boot/systemd.nix"
-    "${nixos}/modules/virtualisation/containers.nix"
-    ({ lib, ... }: let
-      optionValue = default: lib.mkOption { inherit default; };
-    in {
-      # Top-level config attrs need corresponding option definitions
-      # even if they are unused.
-      # Add dummy definitions instead of costly module imports.
-      options = {
-        boot.kernel = {};
-        boot.kernelModules = {};
-        environment.profiles = {};
-        environment.systemPackages = {};
-        networking = {};
-        nix = {};
-        security = {};
-        services = {
-          dbus = {};
-          udev = {};
-          rsyslogd.enable = optionValue false;
-          syslog-ng.enable = optionValue false;
-        };
-        system.activationScripts = optionValue "";
-        system.path = optionValue "";
-        system.requiredKernelConfig = {};
-        users = {};
-     };
-    })
+    containerModulePath
+    dummyOptions
   ];
 
-  # Compatible with nixpkgs > 20.03
-  baseModulesLatest = [
-    "${nixos}/modules/misc/assertions.nix"
-    "${nixos}/modules/misc/nixpkgs.nix"
-    "${nixos}/modules/system/activation/top-level.nix"
-    "${nixos}/modules/system/etc/etc.nix"
-    "${nixos}/modules/system/boot/systemd.nix"
-    "${nixos}/modules/virtualisation/nixos-containers.nix"
-    ({ lib, ... }: let
+  containerModulePath = let
+    new = "${nixos}/modules/virtualisation/nixos-containers.nix";
+    old = "${nixos}/modules/virtualisation/containers.nix"; # For nixpkgs < 20.09
+  in
+    if builtins.pathExists new then new else old;
+
+  dummyOptions = { lib, ... }: let
       optionValue = default: lib.mkOption { inherit default; };
       dummy = optionValue [];
     in {
@@ -94,9 +62,8 @@ let
         users.groups.keys.gid = dummy;
         users.groups.systemd-journal.gid = dummy;
         users.groups.systemd-journal-gateway.gid = dummy;
-     };
-    })
-  ];
+      };
+    };
 
   containerAssert = cond: name: msg: value:
     if cond then value

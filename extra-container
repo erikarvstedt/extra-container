@@ -714,8 +714,8 @@ handleShell() {
         # Start interactive, non-login shell.
         # Contrary to what is stated in the manual, bash --rcfile sources
         # /etc/profile (and consequently .bashrc) before evaluating the custom rcfile.
-        # Use --rcfile to define one-letter functions that may have been redefined
-        # by the user's config if we had just exported them.
+        # This allows us to start a shell with prompt and aliases set up and add extra
+        # features via --rcfile.
         bash --rcfile <(echo "unalias h c cssh 2>/dev/null; $defineShortcuts")
     fi
 

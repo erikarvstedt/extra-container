@@ -1,4 +1,4 @@
-nixosPath: systemConfig:
+args@{nixosPath, systemConfig, inStage2 ? false}:
 
 let
   nixos = toString nixosPath;
@@ -131,6 +131,17 @@ let
                     Requires privateNetwork == true.
                   '';
                 };
+                overrideArgs = mkOption {
+                  type = types.nullOr types.attrs; #TODO
+                  default = null;
+                  description = ''
+                    Allows overriding the parameters extra-container passes
+                    to it's own `eval-config.nix`.
+
+                    This works in a nontrivial manner: it makes a nested call to `eval-config.nix`.
+                    See the source.
+                    '';
+                };
               };
             };
 
@@ -207,8 +218,37 @@ let
         listToAttrs (map (c: nameValuePair "container@${c}" (serviceCfg c)) WANContainers);
     };
   };
+
+
+  # Enable nixlang based pinning
+
+  showSet = (import (nixos + "/..") {}).lib.generators.toPretty { allowPrettyValues = true; }; #TODO , and assumes its in a nixpkgs checkout
+
+  #TODO this is kind of funky because the first time around its evaluated with the "wrong" nixpkgs. Then stage2 gets called and it gets evaluated with the right one.
+  # There are probably ways this can result in broken behaviour when it's run in the wrong version, even though we are relying on laziness to "only" get us the path attribute?
+  # It's also technically possible for the attribute to depend on other attributes.
+  stage1 = let
+      extraArgs = { extra-container = { inherit args; path = builtins.toString ./.; }; }; #TODO should that be tostringed?
+    in
+      builtins.trace "evaling stage1 with args: ${showSet args} \n and extraArgs: ${showSet extraArgs} ..." # https://fzakaria.com/2020/09/02/nix-coercion-trick.html
+        (import "${nixos}/lib/eval-config.nix" {
+          inherit baseModules extraArgs;
+          modules = [ extraModule systemConfig ];
+        });
+
+  stage2 = let
+      newArgs = (args // { inStage2 = true; } // extra-overrides);
+    in
+      builtins.trace "evaling stage2 with args: ${showSet args} \n and overrides: ${showSet newArgs}..."
+      (import ./eval-config.nix newArgs);
+
+  #TODO what if there are multiple containers? There's no "meaningful" reason they shouldn't be able to each have different pins. The funky part is you have to eval them all in some context. For now, if you want to do this, you should have one container per file.
+  firstAttr = a: 
+    let name = builtins.head (builtins.attrNames a)
+    in builtins.getAttr name a
+  extra-overrides = (firstAttr stage1.config.containers).extra.overrideArgs;
 in
-import "${nixos}/lib/eval-config.nix" {
-  inherit baseModules;
-  modules = [ extraModule systemConfig ];
-}
+  # Only do work on a second eval-config if we need to #TODO benchmark
+  if (extra-overrides == null || inStage2)
+    then stage1
+    else stage2

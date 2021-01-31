@@ -244,8 +244,8 @@ let
 
   #TODO what if there are multiple containers? There's no "meaningful" reason they shouldn't be able to each have different pins. The funky part is you have to eval them all in some context. For now, if you want to do this, you should have one container per file.
   firstAttr = a: 
-    let name = builtins.head (builtins.attrNames a)
-    in builtins.getAttr name a
+    let name = builtins.head (builtins.attrNames a);
+    in builtins.getAttr name a;
   extra-overrides = (firstAttr stage1.config.containers).extra.overrideArgs;
 in
   # Only do work on a second eval-config if we need to #TODO benchmark

@@ -84,8 +84,8 @@ let
                   default = null;
                   description = ''
                     Enable privateNetwork and set
-                    hostAddress = ${addressPrefix}.1
-                    localAddress = ${addressPrefix}.2
+                    hostAddress = <addressPrefix>.1
+                    localAddress = <addressPrefix>.2
                   '';
                 };
                 enableWAN = mkOption {

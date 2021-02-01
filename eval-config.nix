@@ -12,11 +12,11 @@ let
     "${nixos}/modules/system/activation/top-level.nix"
     "${nixos}/modules/system/etc/etc.nix"
     "${nixos}/modules/system/boot/systemd.nix"
-    containerModulePath
+    nixosContainerModule
     dummyOptions
   ];
 
-  containerModulePath = let
+  nixosContainerModule = let
     new = "${nixos}/modules/virtualisation/nixos-containers.nix";
     old = "${nixos}/modules/virtualisation/containers.nix"; # For nixpkgs < 20.09
   in

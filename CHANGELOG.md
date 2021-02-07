@@ -1,6 +1,6 @@
 # 0.6 (2021-02-05)
 - Fixes
-  - Add compatibilitiy with current NixOS unstable.
+  - Add compatibility with current NixOS unstable.
   - `extra.exposeLocalhost`: don't fail when iptables lock can't be obtained immediately.
   - Fix `PATH` not being preserved in container shells.
 # 0.5 (2020-11-01)

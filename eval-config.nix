@@ -29,6 +29,7 @@ let
     options = {
       boot.kernel.sysctl = dummy;
       boot.kernelModules = dummy;
+      boot.kernelPackages.kernel.version = optionValue "";
       boot.kernelParams = dummy;
       environment.systemPackages = dummy;
       networking.dhcpcd.denyInterfaces = dummy;

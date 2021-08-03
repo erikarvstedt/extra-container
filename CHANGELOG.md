@@ -1,3 +1,9 @@
+# 0.7 (2021-08-03)
+- Enhancements
+  - Support NixOS 21.05 and unstable
+  - Add basic [Nix flake](https://nixos.wiki/wiki/Flakes) support
+    for installing and developing.\
+    `extra-container` itself still uses `nix-build` internally.
 # 0.6 (2021-02-05)
 - Fixes
   - Add compatibility with current NixOS unstable.

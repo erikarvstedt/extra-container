@@ -58,6 +58,12 @@ sudo extra-container destroy demo
 
 
 #### On NixOS
+
+##### NixOS with `flake` support
+Just import `extra-container.nixosModule` in your configuration.
+
+##### NixOS without `flake` support
+
 ```nix
 { pkgs, ... }:
 let
@@ -330,9 +336,45 @@ Finally, add gcroots pointing to the linked files.
 ## Developing
 All contributions and suggestions are welcome, even if they're minor or cosmetic.
 
-For tests run `test.sh` or `run-tests-in-container.sh` to reduce interference with your main system.
+### Development workflow
 
-The tests add and remove temporary containers named `test-*` on the host system.
+Run `nix develop` in the project root directory to start a development shell.\
+Within the shell, you can run extra-container from the [local
+source](./extra-container) via command `extra-container`.
 
 When changing the `Usage` documentation in `extra-container`, run `./update-readme` to copy
 these changes to `README.md`.
+
+#### Tests
+
+Run `make` to run the tests.\
+The following tests are executed:
+
+- Main test suite
+
+  Can be run manually via `sudo run-tests-in-container.sh`.\
+  This script creates a temporary container named `test-extra-container` in which
+  the main test script [`test.sh`](./test.sh) is run.\
+  `test.sh` adds and removes temporary containers named `test-*` on the host system.
+  It can also be called directly, but wrapping it with `run-tests-in-container.sh`
+  helps reducing interference with your main system.
+
+- VM test
+
+  Can be run manually via `nix build .#test`.\
+  This is a basic test using the [NixOS VM test
+  framework](https://github.com/NixOS/nixpkgs/blob/master/nixos/lib/testing-python.nix).
+  It is built as a Nix derivation, which makes it independent from the system
+  environment.
+
+  For debugging the VM, run `nix run .#debugTest` to start a Python test driver shell
+  inside the VM.
+
+- `nix flake check`
+
+  Evaluates all flake outputs and builds the VM test.
+
+#### VM
+
+Run `nix run` or `nix run .#vm` to start a VM where `extra-container` is installed.\
+This provides an isolated and reproducible testing environment.

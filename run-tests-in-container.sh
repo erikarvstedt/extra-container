@@ -33,9 +33,14 @@ extra-container create -s <<EOF
   containers.test-extra-container = {
     bindMounts."/extra-container".hostPath = "$scriptDir";
     bindMounts."/nixpkgs".hostPath = "$nixpkgs";
-    config.environment = {
-      systemPackages = [ pkgs.nixos-container ];
-      variables.NIX_PATH = lib.mkForce "nixpkgs=/nixpkgs";
+    config = { options, ... }: {
+      environment = {
+        systemPackages = [ pkgs.nixos-container ];
+        variables.NIX_PATH = lib.mkForce "nixpkgs=/nixpkgs";
+      };
+      boot = lib.optionalAttrs (options.boot ? extraSystemdUnitPaths) {
+        extraSystemdUnitPaths = [ "/etc/systemd-mutable/system" ];
+      };
     };
   };
 }

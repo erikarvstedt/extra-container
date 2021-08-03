@@ -1,4 +1,4 @@
-nixosPath: systemConfig:
+{ nixosPath, systemConfig, system ? builtins.currentSystem }:
 
 let
   nixos = toString nixosPath;
@@ -212,6 +212,6 @@ let
   };
 in
 import "${nixos}/lib/eval-config.nix" {
-  inherit baseModules;
+  inherit baseModules system;
   modules = [ extraModule systemConfig ];
 }

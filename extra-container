@@ -221,7 +221,10 @@ buildContainers() {
     fi
     NIX_PATH=$NIX_PATH:pwd=$PWD nix-build --out-link $tmpDir/result "${buildArgs[@]}" -E \
     " let cfg = ($containerCfg)$attrExpr;
-      in (import $evalConfig $nixosPath cfg).config.system.build.etc
+      in (import $evalConfig {
+         nixosPath = $nixosPath;
+         systemConfig = cfg;
+      }).config.system.build.etc
     " >/dev/null
 }
 

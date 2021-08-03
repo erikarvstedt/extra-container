@@ -133,7 +133,7 @@ storePath=$(extra-container build <<EOF
 { config, pkgs, ... }:
 {
   containers.test-1 = {
-      $baseConfig;
+    $baseConfig;
   };
 }
 EOF

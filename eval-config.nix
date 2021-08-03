@@ -29,6 +29,7 @@ let
     options = {
       boot.kernel.sysctl = dummy;
       boot.kernelModules = dummy;
+      boot.kernelPackages.kernel.version = optionValue "";
       boot.kernelParams = dummy;
       environment.systemPackages = dummy;
       networking.dhcpcd.denyInterfaces = dummy;
@@ -47,6 +48,7 @@ let
       system.nssModules = dummy;
       system.requiredKernelConfig = dummy;
       ids.gids.keys = dummy;
+      ids.uids.systemd-coredump = dummy;
       ids.gids.systemd-journal = dummy;
       ids.gids.systemd-journal-gateway = dummy;
       ids.uids.systemd-journal-gateway = dummy;
@@ -54,6 +56,7 @@ let
       ids.uids.systemd-network = dummy;
       ids.uids.systemd-resolve = dummy;
       ids.gids.systemd-resolve = dummy;
+      users.users.systemd-coredump = dummy;
       users.users.systemd-network.uid = dummy;
       users.users.systemd-resolve.uid = dummy;
       users.users.systemd-journal-gateway.uid = dummy;

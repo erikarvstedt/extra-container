@@ -116,6 +116,10 @@
             export tests='start_all(); import code; code.interact(local=globals())'
             ${packages.test.driver}/bin/nixos-test-driver
           '';
+
+          updateReadme = pkgs.writers.writeBash "update-readme" ''
+            exec ${pkgs.ruby}/bin/ruby ${toString ./util/update-readme.rb}
+          '';
         };
 
         apps = {
@@ -129,6 +133,11 @@
           debugTest = {
             type = "app";
             program = toString packages.debugTest;
+          };
+
+          updateReadme = {
+            type = "app";
+            program = toString packages.updateReadme;
           };
         };
 

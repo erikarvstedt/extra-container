@@ -342,7 +342,7 @@ Run `nix develop` in the project root directory to start a development shell.\
 Within the shell, you can run extra-container from the [local
 source](./extra-container) via command `extra-container`.
 
-When changing the `Usage` documentation in `extra-container`, run `./update-readme` to copy
+When changing the `Usage` documentation in `extra-container`, run `make doc` to copy
 these changes to `README.md`.
 
 #### Tests

@@ -8,4 +8,7 @@ runTests:
 checkFlake:
 	nix flake check
 
-.PHONY: runTests checkFlake test
+doc:
+	nix run .#updateReadme
+
+.PHONY: runTests checkFlake test doc

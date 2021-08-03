@@ -1,7 +1,0 @@
-#! /usr/bin/env nix-shell
-#! nix-shell -i ruby -p ruby
-
-readme = File.read('README.md')
-usage = `./extra-container`.sub(/\A.*?Usage:\s*/m, '')
-updated = readme.sub(/(?<=^## Usage\n```\n).*?(?=^```)/m, usage)
-File.write('README.md', updated)

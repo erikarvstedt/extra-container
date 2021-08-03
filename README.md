@@ -71,7 +71,9 @@ let
     pkgs.callPackage src { pkgSrc = src; };
 in
 {
-  systemPackages = [ extra-container ];
+  environment.systemPackages = [ extra-container ];
+  # For NixOS > 20.09:
+  boot.extraSystemdUnitPaths = [ "/etc/systemd-mutable/system" ];
 }
 ```
 

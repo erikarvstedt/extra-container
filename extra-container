@@ -608,6 +608,23 @@ isContainerUnchanged() {
     fi
 }
 
+checkInstallationSuccess() {
+    if [[ $isNixOS ]]; then
+        service=container@$1.service
+        # If ExecStart points to the generic 'container_-start' script of the
+        # 'container@.service' service template, the installation of the
+        # container service file failed.
+        if [[ $(systemctl show -p ExecStart $service) == */bin/container_-start*  ]]; then
+            errEcho
+            errEcho 'Container service installation failed.'
+            errEcho 'Please add the following to your NixOS configuration'
+            errEcho 'to enable dynamically installing systemd units:'
+            errEcho 'boot.extraSystemdUnitPaths = [ "/etc/systemd-mutable/system" ]';
+            exit 1
+        fi
+    fi
+}
+
 echo
 echo "Installing containers:"
 
@@ -643,6 +660,7 @@ done
 
 if [[ $changedContainers ]]; then
     systemctl daemon-reload
+    checkInstallationSuccess ${changedContainers[0]}
 fi
 
 ## 3. Setup shell

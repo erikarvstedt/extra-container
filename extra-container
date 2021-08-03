@@ -568,6 +568,7 @@ makeStartInterruptible=
 if [[ $shell ]]; then
     if (( ${#allContainers[@]} > 1 )); then
         errEcho "Command 'shell' requires only one container to be defined"
+        exit 1
     fi
     shellContainer=${allContainers[0]}
 

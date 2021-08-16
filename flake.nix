@@ -1,5 +1,4 @@
 {
-
   description = "Run declarative NixOS containers without full system rebuilds";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs";
@@ -8,23 +7,22 @@
   outputs = { self, nixpkgs, flake-utils }:
     let
       supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" ];
-    in flake-utils.lib.eachSystem supportedSystems  (system:
+      pkg = pkgs: pkgs.callPackage ./. { pkgSrc = ./.; };
+    in
+    {
+      nixosModule = { pkgs, ... }: {
+        environment.systemPackages = [ (pkg pkgs) ];
+        boot.extraSystemdUnitPaths = [ "/etc/systemd-mutable/system" ];
+      };
+
+      overlay = final: prev: { extra-container = pkg final; };
+
+    } // (flake-utils.lib.eachSystem supportedSystems (system:
       let
         pkgs = import nixpkgs { inherit system; };
-        pkg = pkgs: pkgs.callPackage ./. { pkgSrc = ./.; };
       in
       rec {
         defaultPackage = pkg pkgs;
-
-        # TODO
-        # Currently disabled because `nix flake check` fails with error
-        # `overlay does not take an argument named 'final'`
-        # overlay = final: prev: { extra-container = pkg final; };
-
-        nixosModule = { pkgs, ... }: {
-          environment.systemPackages = [ (pkg pkgs) ];
-          boot.extraSystemdUnitPaths = [ "/etc/systemd-mutable/system" ];
-        };
 
         # This dev shell allows running the `extra-container` command directly from the local
         # source (./extra-container), for quick edit/test cycles.
@@ -53,7 +51,7 @@
             name = "extra-container";
 
             machine = {
-              imports = [ nixosModule ];
+              imports = [ self.nixosModule ];
               virtualisation.memorySize = 1024; # Needed for evaluating the container system
               nix.nixPath = [ "nixpkgs=${nixpkgs}" ];
               # Pre-build the container used by testScript
@@ -85,7 +83,7 @@
               virtualisation.graphics = false;
               services.getty.autologinUser = "root";
               nix.nixPath = [ "nixpkgs=${nixpkgs}" ];
-              imports = [ nixosModule ];
+              imports = [ self.nixosModule ];
               # Pre-build a minimal container
               system.extraDependencies = let
                 basicContainer = import ./eval-config.nix {
@@ -145,5 +143,5 @@
 
         checks = { inherit (packages) test; };
       }
-    );
+    ));
 }

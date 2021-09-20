@@ -57,6 +57,7 @@ let
       ids.uids.systemd-resolve = dummy;
       ids.gids.systemd-resolve = dummy;
       users.users.systemd-coredump = dummy;
+      users.users.systemd-network.group = dummy;
       users.users.systemd-network.uid = dummy;
       users.users.systemd-resolve.uid = dummy;
       users.users.systemd-journal-gateway.group = dummy;

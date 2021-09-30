@@ -50,6 +50,17 @@ nixos-container status demo
 sudo extra-container destroy demo
 ```
 
+#### Run command in a container and exit
+
+```bash
+cfg='{
+  containers.demo.config = {
+    networking.hostName = "hello";
+  };
+}'
+extra-container shell -E "$cfg" --run c hostname # => hello
+```
+
 ## Changelog
 
  [`CHANGELOG.md`](CHANGELOG.md)
@@ -146,14 +157,14 @@ demo
 
 Run a command in a shell session and exit. The container is destroyed afterwards.
 ```bash
-cfg='{ containers.demo.config = {}; }'
+cfg='{ containers.demo = {}; }'
 extra-container shell -E "$cfg" --run c hostname
 # => demo
 ```
 
 Start a shell inside the container.
 ```bash
-cfg='{ containers.demo.config = {}; }'
+cfg='{ containers.demo = {}; }'
 extra-container shell -E "$cfg" --run c
 ```
 

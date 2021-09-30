@@ -25,7 +25,7 @@ cleanup
 
 #
 
-nixpkgs=$(nix eval --raw '(toString <nixpkgs>)')
+nixpkgs=$(nix-instantiate --eval -E '(toString <nixpkgs>)' | tr -d '"')
 
 extra-container create -s <<EOF
 { config, pkgs, lib, ... }:

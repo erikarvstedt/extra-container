@@ -4,7 +4,7 @@
 
 stdenv.mkDerivation rec {
   pname = "extra-container";
-  version = "0.7";
+  version = "0.8";
 
   src = pkgSrc;
 
@@ -28,6 +28,7 @@ stdenv.mkDerivation rec {
     description = "Run declarative containers without full system rebuilds";
     homepage = https://github.com/erikarvstedt/extra-container;
     license = licenses.mit;
+    platforms = platforms.linux;
     maintainers = [ maintainers.earvstedt ];
   };
 }

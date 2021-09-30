@@ -1,3 +1,8 @@
+# 0.8 (2021-09-30)
+- Enhancements
+  - Support NixOS and unstable
+- Fixes
+  - Fix flake
 # 0.7 (2021-08-03)
 - Enhancements
   - Support NixOS 21.05 and unstable

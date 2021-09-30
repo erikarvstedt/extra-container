@@ -622,7 +622,9 @@ checkInstallationSuccess() {
             errEcho 'Container service installation failed.'
             errEcho 'Please add the following to your NixOS configuration'
             errEcho 'to enable dynamically installing systemd units:'
-            errEcho 'boot.extraSystemdUnitPaths = [ "/etc/systemd-mutable/system" ]';
+            errEcho 'boot.extraSystemdUnitPaths = [ "/etc/systemd-mutable/system" ];'
+            errEcho
+            errEcho 'See also: https://github.com/erikarvstedt/extra-container/#install'
             exit 1
         fi
     fi

@@ -17,11 +17,11 @@ stdenv.mkDerivation rec {
     # Use existing PATH for systemctl and machinectl
     scriptPath="export PATH=${lib.makeBinPath [ nixos-container openssh ]}:\$PATH"
 
-    sed -i \
-      -e "s|evalConfig=.*|evalConfig=$share/eval-config.nix|" \
-      -e "s|LOCALE_ARCHIVE=.*|LOCALE_ARCHIVE=${glibcLocales}/lib/locale/locale-archive|" \
-      -e "2i$scriptPath" \
-      $out/bin/extra-container
+    sed -i "
+      s|evalConfig=.*|evalConfig=$share/eval-config.nix|
+      s|LOCALE_ARCHIVE=.*|LOCALE_ARCHIVE=${glibcLocales}/lib/locale/locale-archive|
+      2i$scriptPath
+    " $out/bin/extra-container
   '';
 
   meta = with lib; {

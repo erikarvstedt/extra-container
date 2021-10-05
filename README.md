@@ -67,13 +67,16 @@ extra-container shell -E "$cfg" --run c hostname # => hello
 
 ## Install
 
+### On NixOS
 
-#### On NixOS
+##### NixOS unstable
 
-##### NixOS with `flake` support
-Just import `extra-container.nixosModule` in your configuration.
+Add `programs.extra-container.enable = true` to your configuration.
 
-##### NixOS without `flake` support
+##### NixOS stable with `flake` support
+Import `extra-container.nixosModule` in your configuration.
+
+##### NixOS stable without `flake` support
 
 ```nix
 { pkgs, ... }:
@@ -94,7 +97,7 @@ in
 }
 ```
 
-#### On other systemd-based Linux distros
+### On other systemd-based Linux distros
 
 ```bash
 git clone https://github.com/erikarvstedt/extra-container

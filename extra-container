@@ -398,12 +398,19 @@ destroyContainers() {
         local gcRootsPath=$(makeGCRootsPath $container)
         rm -f $gcRootsPath
         rm -f $gcRootsPath.conf
+
         # Remove declarative container confFile, otherwise `nixos-container` fails
         # with 'cannot destroy declarative container'
         rm -f $confFile
         # Create dummy confFile, otherwise `nixos-container` stops before
         # destroying the container completely
         touch $confFile
+
+        # Remove immutable attribute from nested container var/empty files so that
+        # the container directory can be deleted
+        varempty=$(echo /var/lib/containers/$container/var/lib/containers/*/var/empty)
+        if [[ $varempty ]]; then chattr -i $varempty; fi
+
         nixos-container destroy $container || true
     done
     if [[ $needDaemonReload ]]; then

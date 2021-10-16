@@ -1,3 +1,6 @@
+# unreleased
+- Fixes
+  - Fix command `destroy` for nested declarative containers
 # 0.8 (2021-09-30)
 - Enhancements
   - Support NixOS unstable

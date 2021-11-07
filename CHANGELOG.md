@@ -1,3 +1,8 @@
+# unreleased
+- Enhancements
+  - Propagate `PAGER=cat` to commands run inside the container.
+    This is useful for users of Emacs' `shell-mode` where traditional pagers
+    are not supported.
 # 0.14 (2025-12-19)
 - Enhancements
   - Support NixOS unstable

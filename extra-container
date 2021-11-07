@@ -145,7 +145,12 @@ fi
 #------------------------------------------------------------------------------
 
 if [[ $EUID != 0 ]]; then
-    exec sudo PATH="$PATH" NIX_PATH="$NIX_PATH" EXTRA_CONTAINER_ETC="$EXTRA_CONTAINER_ETC" "${BASH_SOURCE[0]}" "$@"
+    exec sudo \
+         PATH="$PATH" \
+         NIX_PATH="$NIX_PATH" \
+         EXTRA_CONTAINER_ETC="$EXTRA_CONTAINER_ETC" \
+         EXTRA_CONTAINER_ENABLE_CHECK="${EXTRA_CONTAINER_ENABLE_CHECK-}" \
+         "${BASH_SOURCE[0]}" "$@"
 fi
 
 # Operating system specific setup
@@ -211,6 +216,12 @@ shell=
 list=
 restart=
 destroy=
+cmdDestroy=
+
+start=
+check=${EXTRA_CONTAINER_ENABLE_CHECK-}
+test=
+startShellOnCheckFailure=
 
 case $1 in
     create|add)
@@ -222,17 +233,26 @@ case $1 in
         ;;
     shell)
         shell=1
+        destroy=1
+        shift
+        ;;
+    test)
+        test=1
+        check=1
+        start=1
+        destroy=1
         shift
         ;;
     list)
         list=1
+        shift
         ;;
     restart)
         restart=1
         shift
         ;;
     destroy)
-        destroy=1
+        cmdDestroy=1
         shift
         ;;
     *)
@@ -262,6 +282,15 @@ buildContainers() {
     " >/dev/null
 }
 
+startContainers() {
+    if [[ $check ]]; then
+        # Start $checkContainer
+        check_startContainer
+    else
+        systemctl start "$@"
+    fi
+}
+
 restartContainers() {
     local services=$(getServiceNames $*)
 
@@ -284,7 +313,7 @@ restartContainers() {
         fi
         sleep 0.001
     done
-    systemctl start $services
+    startContainers $services
 }
 
 updateContainers() {
@@ -370,7 +399,6 @@ getInstallDirs() {
 # To simplify the implementation, this fn includes the whole arg parsing for commands
 # `create`, `shell`. These args are not by `destroy`.
 getContainersFromDefinition() {
-    start=
     update=
     restart=
     ssh=
@@ -380,8 +408,6 @@ getContainersFromDefinition() {
     nixosPath=
     buildArgs=()
     runCommand=()
-
-    destroy=1
     forceDestroy=
 
     args=()
@@ -397,6 +423,13 @@ getContainersFromDefinition() {
                 ;;
             --restart-changed|-r)
                 restart=1
+                ;;
+            --check|-c)
+                check=1
+                ;;
+            --debug|-g)
+                check=1
+                startShellOnCheckFailure=1
                 ;;
             --ssh)
                 ssh=1
@@ -532,13 +565,31 @@ getContainersFromDefinition() {
         allContainers+=($(getContainerName $service))
     done
     allContainers=($(printf '%s\n' ${allContainers[@]} | sort))
+
+    if ((${#allContainers[@]} > 1)); then
+        if [[ $shell ]]; then
+            errEcho "Command 'shell' requires only one container to be defined"
+            exit 1
+        elif [[ $check ]]; then
+            errEcho "'check' mode requires only one container to be defined"
+            exit 1
+        fi
+    fi
 }
 
+checkFailed=
 atExit() {
     origExitCode=$?
     set +e
-    if [[ $startShellEnv && $destroy ]]; then
-        [[ $runCommand ]] || echo "Destroying container."
+    if [[ $test || $checkFailed ]]; then
+        errEcho "Destroying container"
+        destroyContainers $checkContainer
+        if [[ $test && ! $checkFailed ]]; then
+            echo
+            echo "Success"
+        fi
+    elif [[ $startShellEnv && $destroy ]]; then
+        [[ $runCommand ]] || errEcho "Destroying container"
         destroyContainers $shellContainer
     fi
     if [[ $tmpDir ]]; then
@@ -636,7 +687,7 @@ destroyContainers() {
     fi
 }
 
-if [[ $destroy ]]; then
+if [[ $cmdDestroy ]]; then
     if  [[ $1 == --all || $1 == -a ]]; then
         getInstallDirs
         containers=($(getContainers))
@@ -664,15 +715,11 @@ fi
 #------------------------------------------------------------------------------
 getContainersFromDefinition "$@"
 
-## Shell related setup
+## Shell and check related setup
 
 startShellEnv=
 makeStartInterruptible=
 if [[ $shell ]]; then
-    if (( ${#allContainers[@]} > 1 )); then
-        errEcho "Command 'shell' requires only one container to be defined"
-        exit 1
-    fi
     shellContainer=${allContainers[0]}
 
     [[ $shellContainer == $runningShellContainer ]] && insideContainerShell=1 || insideContainerShell=
@@ -690,6 +737,16 @@ if [[ $shell ]]; then
         destroyContainers $shellContainer
     fi
     start=1
+fi
+
+checkContainer=
+if [[ $check ]]; then
+    checkContainer=${allContainers[0]}
+    startSucceeded=
+    source check.sh
+    if [[ $destroy ]]; then
+        destroyContainers $checkContainer
+    fi
 fi
 
 ## 4. Install containers
@@ -918,11 +975,13 @@ if [[ $start || $update || $restart ]]; then
         fi
     done
 
+    preStartTimeSec=$(date +%s.%6N)
+
     if [[ $start && ((${#toStart[@]} != 0)) ]]; then
         echo "Starting containers:"
         printf '%s\n' ${toStart[@]}
         echo
-        systemctl start $(getServiceNames ${toStart[@]})
+        startContainers $(getServiceNames ${toStart[@]})
     fi
 
     # Update or restart changed containers that are running
@@ -946,6 +1005,37 @@ if [[ $start || $update || $restart ]]; then
             printf '%s\n' ${toRestart[@]}
             echo
             restartContainers ${toRestart[@]}
+        fi
+    fi
+
+    if [[ $check ]]; then
+        if [[ $check_containerFinishedStart ]]; then
+            echo -n "Container started after "
+            echo $(date +%s.%6N) $preStartTimeSec | awk '{printf "%.3f s\n", ($1 - $2)}'
+            echo
+        fi
+
+        check_runCheckAndPrintResults $preStartTimeSec
+
+        abort() {
+            trap - SIGINT
+            checkFailed=1
+            exit 1
+        }
+
+        if [[ $check_foundInvalidUnits && ! $check_foundFailedUnits ]]; then
+            abort
+        elif [[ $check_foundFailedUnits ]]; then
+            checkFailed=1
+            if [[ $startShellOnCheckFailure || ($shell && ! $runCommand) ]]; then
+                # Start a shell if needed and never run a command
+                runCommand=
+                if [[ ! $insideContainerShell ]]; then
+                    startShellEnv=1
+                fi
+            else
+                abort
+            fi
         fi
     fi
 fi

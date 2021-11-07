@@ -80,6 +80,7 @@
           path = lib.makeBinPath (with pkgs; [
             openssh
             gnugrep
+            gawk
             shadow.su
           ]);
         in pkgs.stdenv.mkDerivation {

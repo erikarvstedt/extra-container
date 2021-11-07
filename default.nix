@@ -1,5 +1,5 @@
-{ stdenv, lib,
-, nixos-container, openssh, glibcLocales, gnugrep, shadow
+{ stdenv, lib
+, nixos-container, openssh, glibcLocales, gnugrep, gawk, shadow
 , pkgSrc ? lib.cleanSource ./.
 }:
 
@@ -20,12 +20,20 @@ stdenv.mkDerivation rec {
 
     sed -i "
       s|\bgrep\b|${gnugrep}/bin/grep|g
+      s|\bawk\b|${gawk}/bin/awk|g
       s|\brunInContainer su\b|runInContainer ${shadow.su}/bin/su|g
       s|evalConfig=.*|evalConfig=$share/eval-config.nix|
       s|LOCALE_ARCHIVE=.*|LOCALE_ARCHIVE=${glibcLocales}/lib/locale/locale-archive|
       2i$scriptPath
       2inixosContainer=${nixos-container}/bin
     " $out/bin/extra-container
+
+    checkSrc=$(<$src/check.sh sed "
+      s|\bcheck_su=.*|check_su=${shadow.su}/bin/su|
+      s|\bcheck_grep=.*|check_grep=${gnugrep}/bin/grep|
+    ")
+
+    substituteInPlace $out/bin/extra-container --replace 'source check.sh' "$checkSrc"
   '';
 
   meta = with lib; {

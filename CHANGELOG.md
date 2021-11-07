@@ -1,3 +1,8 @@
+# unreleased
+- Enhancements
+  - Propagate `PAGER=cat` to commands run inside the container.
+    This is useful for users of Emacs' `shell-mode` where traditional pagers
+    are not supported.
 # 0.13 (2024-12-12)
 - Enhancements
   - Support NixOS option `containers.<name>.autoStart`.

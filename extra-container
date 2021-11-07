@@ -804,13 +804,40 @@ handleShell() {
     export containerIp=$(nixos-container show-ip $shellContainer 2> /dev/null) || containerIp=
     export runningShellContainer=$shellContainer
     export containerStateDirectory=$stateDirectory
-    extraContainerCmd() {
-        if [[ $# > 0 ]]; then
-            nixos-container run $name -- "$@" | cat;
-        else
-            nixos-container root-login $name
+
+    function runInContainer() {
+        leader=$(machinectl show "$name" -p Leader | cut -d= -f2)
+        if [[ $leader ]]; then
+            nsenter -t "$leader" -m -u -i -n -p -- "$@"
         fi
     }
+
+    if [[ $PAGER = cat ]]; then
+        # Like extraContainerCmd, but env var PAGER=cat is set
+        function extraContainerCmd() {
+            if [[ $# > 0 ]]; then
+                runInContainer su root -l -c "PAGER=cat exec $(printf "%q " "$@")"
+            else
+                runInContainer env -i \
+                               ${TERM+TERM="$TERM"} \
+                               ${COLORTERM+COLORTERM="$COLORTERM"} \
+                               ${DISPLAY+DISPLAY="$DISPLAY"} \
+                               ${XAUTHORITY+XAUTHORITY="$XAUTHORITY"} \
+                               /bin/sh -c '. /etc/set-environment; PAGER=cat exec su root -l --preserve-environment'
+            fi
+        }
+    else
+        function extraContainerCmd() {
+            if [[ $# > 0 ]]; then
+                # behaves exactly like `nixos-container run`
+                runInContainer su root -l -c "exec $(printf "%q " "$@")"
+            else
+                # behaves exactly like `nixos-container root-login`
+                runInContainer su root -l
+            fi
+        }
+    fi
+
     if [[ $extraContainerSSH ]]; then
         makeTmpDir
         export sshKey
@@ -822,8 +849,8 @@ handleShell() {
                 root@$ip "$@"
         }
         export -f extraContainerSSHCmd
-
     fi
+
     extraContainerHelp() {
         if [[ $ip ]]; then
             echo "Container address: $ip (\$ip)"
@@ -836,7 +863,7 @@ handleShell() {
             echo 'Run "cssh" for SSH'
         fi
     }
-    export -f extraContainerCmd extraContainerHelp
+    export -f extraContainerCmd runInContainer extraContainerHelp
 
     defineShortcuts='
       function h() { extraContainerHelp; }

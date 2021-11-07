@@ -1,4 +1,5 @@
-{ stdenv, lib, nixos-container, openssh, glibcLocales
+{ stdenv, lib,
+, nixos-container, openssh, glibcLocales, gnugrep, shadow
 , pkgSrc ? lib.cleanSource ./.
 }:
 
@@ -18,6 +19,8 @@ stdenv.mkDerivation rec {
     scriptPath="export PATH=${lib.makeBinPath [ openssh ]}:\$PATH"
 
     sed -i "
+      s|\bgrep\b|${gnugrep}/bin/grep|g
+      s|\brunInContainer su\b|runInContainer ${shadow.su}/bin/su|g
       s|evalConfig=.*|evalConfig=$share/eval-config.nix|
       s|LOCALE_ARCHIVE=.*|LOCALE_ARCHIVE=${glibcLocales}/lib/locale/locale-archive|
       2i$scriptPath

@@ -1,3 +1,8 @@
+# unreleased
+- Enhancements
+  - Propagate `PAGER=cat` to commands run inside the container.
+    This is useful for users of Emacs' `shell-mode` where traditional pagers
+    are not supported.
 # 0.12 (2023-06-15)
 - Enhancements
   - Flake: Allow accessing built container configs.

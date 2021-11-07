@@ -73,6 +73,8 @@
           # Extra PATH, as defined in ./default.nix
           path = lib.makeBinPath (with pkgs; [
             openssh
+            gnugrep
+            shadow.su
           ]);
         in pkgs.stdenv.mkDerivation {
           name = "shell";

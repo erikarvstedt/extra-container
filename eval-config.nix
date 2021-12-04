@@ -179,7 +179,7 @@ let
                           option extra.exposeLocalhost requires localAddress to be non-null.
                         ''
                         ''
-                          ${pkgs.procps}/bin/sysctl -w net.ipv4.conf.all.route_localnet=1
+                          ${pkgs.procps}/bin/sysctl -w net.ipv4.conf.eth0.route_localnet=1
                           ${pkgs.iptables}/bin/iptables -w -t nat -I PREROUTING -p tcp \
                             -d ${config.localAddress} ! --dport 80 -j DNAT --to-destination 127.0.0.1
                         '';

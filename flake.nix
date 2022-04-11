@@ -139,8 +139,6 @@
           };
         };
 
-        defaultApp = apps.vm;
-
         checks = { inherit (packages) test; };
       }
     ));

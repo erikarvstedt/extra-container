@@ -390,5 +390,5 @@ The following tests are executed:
 
 #### VM
 
-Run `nix run` or `nix run .#vm` to start a VM where `extra-container` is installed.\
+Run `nix run .#vm` to start a VM where `extra-container` is installed.\
 This provides an isolated and reproducible testing environment.

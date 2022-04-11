@@ -9,6 +9,7 @@ let
   baseModules = [
     "${nixos}/modules/misc/assertions.nix"
     "${nixos}/modules/misc/nixpkgs.nix"
+    "${nixos}/modules/misc/extra-arguments.nix"
     "${nixos}/modules/system/activation/top-level.nix"
     "${nixos}/modules/system/etc/etc.nix"
     "${nixos}/modules/system/boot/systemd.nix"
@@ -22,7 +23,7 @@ let
   in
     if builtins.pathExists new then new else old;
 
-  dummyOptions = { lib, ... }: let
+  dummyOptions = { lib, options, ... }: let
     optionValue = default: lib.mkOption { inherit default; };
     dummy = optionValue [];
   in {
@@ -38,6 +39,7 @@ let
       security = dummy;
       services = {
         dbus = dummy;
+        logrotate = dummy;
         udev = dummy;
         rsyslogd.enable = optionValue false;
         syslog-ng.enable = optionValue false;
@@ -69,6 +71,13 @@ let
       users.groups.keys.gid = dummy;
       users.groups.systemd-journal.gid = dummy;
       users.groups.systemd-journal-gateway.gid = dummy;
+    };
+
+    config = {
+      systemd.timers = lib.mkForce {};
+      systemd.targets = lib.mkForce {};
+    } // lib.optionalAttrs (options.systemd ? managerEnvironment) {
+      systemd.managerEnvironment = lib.mkForce {};
     };
   };
 

@@ -1,4 +1,6 @@
-# unreleased
+# 0.9 (2022-04-11)
+- Enhancements
+  - Support NixOS unstable
 - Fixes
   - Fix command `destroy` for nested declarative containers
 # 0.8 (2021-09-30)

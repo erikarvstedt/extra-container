@@ -41,7 +41,7 @@ baseConfig='config = { documentation.nixos.enable = false; }'
 
 cleanup
 
-#
+#―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 echo "Test attr arg and container starting "
 
 output=$(extra-container create -A 'a b' --start <<EOF
@@ -57,7 +57,7 @@ EOF
 
 testMatches "$output" "*Installing*test-1*Starting*test-1*"
 
-#
+#―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 echo "Test starting and updating"
 
 output=$(extra-container create -s <<EOF
@@ -75,7 +75,7 @@ EOF
 
 testMatches "$output" "*Starting*test-2*Updating*test-1*"
 
-#
+#―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 echo "Test unchanged"
 
 output=$(extra-container create -s <<EOF
@@ -90,7 +90,7 @@ EOF
 
 testMatches "$output" "*test-1 (unchanged, skipped)*"
 
-#
+#―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 echo "Test updating and restarting"
 
 output=$(extra-container create -u <<EOF
@@ -109,7 +109,7 @@ EOF
 
 testMatches "$output" "*Updating*test-1*Restarting*test-2*"
 
-#
+#―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 echo "Test shell run"
 
 read -d '' src <<EOF || true
@@ -126,7 +126,7 @@ testMatches "$output" "*Linux test*"
 # Container should be destroyed after running
 [[ ! -e /var/lib/containers/test-1 ]]
 
-#
+#―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 echo "Test manual build"
 
 storePath=$(extra-container build <<EOF
@@ -144,13 +144,13 @@ testMatches "$storePath" "/nix/store/*"
 output=$(extra-container create -s $storePath)
 testMatches "$output" "*Starting*test-1*"
 
-#
+#―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 echo "Test list"
 
 output=$(extra-container list | grep ^test- || true)
 testMatches "$output" "test-1*test-2"
 
-#
+#―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 echo "Test destroy"
 
 [[ $(echo /var/lib/containers/test-*) ]]

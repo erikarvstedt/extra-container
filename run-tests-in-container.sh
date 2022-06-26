@@ -23,7 +23,7 @@ trap 'reportError $LINENO' ERR
 
 cleanup
 
-#
+#―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 
 nixpkgs=$(nix-instantiate --eval -E '(toString <nixpkgs>)' | tr -d '"')
 

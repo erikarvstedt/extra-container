@@ -172,6 +172,8 @@ fi
 # Parse and run command
 #------------------------------------------------------------------------------
 
+trap 'echo "Error at ${BASH_SOURCE[0]}:$LINENO"' ERR
+
 tmpDir=
 onlyBuild=
 shell=

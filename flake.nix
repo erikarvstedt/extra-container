@@ -10,24 +10,24 @@
       pkg = pkgs: pkgs.callPackage ./. { pkgSrc = ./.; };
     in
     {
-      nixosModule = { pkgs, ... }: {
+      nixosModules.default = { pkgs, ... }: {
         environment.systemPackages = [ (pkg pkgs) ];
         boot.extraSystemdUnitPaths = [ "/etc/systemd-mutable/system" ];
       };
 
-      overlay = final: prev: { extra-container = pkg final; };
+      overlays.default = final: prev: { extra-container = pkg final; };
 
     } // (flake-utils.lib.eachSystem supportedSystems (system:
       let
         pkgs = import nixpkgs { inherit system; };
       in
       rec {
-        defaultPackage = pkg pkgs;
+        packages.default = pkg pkgs;
 
         # This dev shell allows running the `extra-container` command directly from the local
         # source (./extra-container), for quick edit/test cycles.
         # This only works when `nix develop` is started from the repo root directory.
-        devShell = pkgs.stdenv.mkDerivation {
+        devShells.default = pkgs.stdenv.mkDerivation {
           name = "shell";
           packages = with pkgs; [
             nixos-container
@@ -51,7 +51,7 @@
             name = "extra-container";
 
             nodes.machine = { config, ... }: {
-              imports = [ self.nixosModule ];
+              imports = [ self.nixosModules.default ];
               virtualisation.memorySize = 1024; # Needed for evaluating the container system
               nix.nixPath = [ "nixpkgs=${nixpkgs}" ];
               system.stateVersion = config.system.nixos.release;
@@ -83,7 +83,7 @@
             inherit system;
             configuration = { config, pkgs, lib, modulesPath, ... }: with lib; {
               imports = [
-                self.nixosModule
+                self.nixosModules.default
                 "${modulesPath}/virtualisation/qemu-vm.nix"
               ];
               virtualisation.graphics = false;

@@ -15,12 +15,13 @@ stdenv.mkDerivation rec {
     install $src/eval-config.nix -Dt $share
 
     # Use existing PATH for systemctl and machinectl
-    scriptPath="export PATH=${lib.makeBinPath [ nixos-container openssh ]}:\$PATH"
+    scriptPath="export PATH=${lib.makeBinPath [ openssh ]}:\$PATH"
 
     sed -i "
       s|evalConfig=.*|evalConfig=$share/eval-config.nix|
       s|LOCALE_ARCHIVE=.*|LOCALE_ARCHIVE=${glibcLocales}/lib/locale/locale-archive|
       2i$scriptPath
+      2inixosContainer=${nixos-container}/bin
     " $out/bin/extra-container
   '';
 

@@ -342,7 +342,8 @@ performance.
 Now link the container files from the etc derivation to the main system, like so:
 ```
 nixos-system/etc/systemd/system/container@CONTAINER.service -> /etc/systemd-mutable/system
-nixos-system/etc/containers/CONTAINER.conf -> /etc/containers
+nixos-system/etc/containers/CONTAINER.conf -> /etc/containers       (system.stateVersion < 22.05)
+                                           -> /etc/nixos-containers (system.stateVersion ≥ 22.05)
 ```
 Finally, add gcroots pointing to the linked files.
 

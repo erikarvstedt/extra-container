@@ -169,6 +169,14 @@ else
     }
 fi
 
+# Use existing `nixos-container` in PATH by default because on NixOS the container
+# install location differs depending on `system.stateVersion` and is hardcoded in
+# the `nixos-container` binary.
+# See also: function `getInstallDirs`.
+if ! type -P nixos-container > /dev/null; then
+    PATH=$nixosContainer:$PATH
+fi
+
 # Parse and run command
 #------------------------------------------------------------------------------
 
@@ -225,6 +233,7 @@ buildContainers() {
     " let cfg = ($containerCfg)$attrExpr;
       in (import $evalConfig {
          nixosPath = $nixosPath;
+         oldInstallDirs = $oldInstallDirs;
          systemConfig = cfg;
       }).config.system.build.etc
     " >/dev/null
@@ -257,7 +266,7 @@ restartContainers() {
 
 updateContainers() {
     for container in $*; do
-        local confFile=/etc/containers/$container.conf
+        local confFile=$configDirectory/$container.conf
         local systemPath=$(grep -ohP "(?<=^SYSTEM_PATH=).*" $confFile)
         # Shift output 2 spaces to the right
         echo "  Updating $container"
@@ -312,6 +321,24 @@ makeTmpDir() {
     fi
 }
 
+configDirectory=
+getInstallDirs() {
+    if [[ ! $configDirectory ]]; then
+        nixosContainer=$(type -p nixos-container)
+        if grep -q '"/etc/nixos-containers"' "$nixosContainer"; then
+            configDirectory=/etc/nixos-containers
+            configDirectoryName=nixos-containers
+            stateDirectory=/var/lib/nixos-containers
+            oldInstallDirs=false
+        else
+            configDirectory=/etc/containers
+            configDirectoryName=containers
+            stateDirectory=/var/lib/containers
+            oldInstallDirs=true
+        fi
+    fi
+}
+
 atExit() {
     origExitCode=$?
     set +e
@@ -363,13 +390,15 @@ destroyContainers() {
         exit 1
     fi
 
+    getInstallDirs
+
     if [[ $1 == --all || $1 == -a ]]; then
         containers=$(getContainers)
     else
         containers="$*"
     fi
 
-    if [[ ! -e /etc/containers ]]; then
+    if [[ ! -e "$configDirectory" ]]; then
         # No containers installed. The containers dir is needed by the code below.
         return
     fi
@@ -379,7 +408,7 @@ destroyContainers() {
     for container in $containers; do
         service=container@${container}.service
         serviceFile=${mutableServicesDir}/$service
-        confFile=/etc/containers/$container.conf
+        confFile="$configDirectory/$container.conf"
 
         # Signal 'stop' before killing so that the killed container doesn't restart
         local output
@@ -410,8 +439,9 @@ destroyContainers() {
 
         # Remove immutable attribute from nested container var/empty files so that
         # the container directory can be deleted
-        varempty=$(echo /var/lib/containers/$container/var/lib/containers/*/var/empty)
-        if [[ $varempty ]]; then chattr -i $varempty; fi
+        for varempty in "$stateDirectory"/$container/var/lib/*containers/*/var/empty; do
+            chattr -i $varempty
+        done
 
         nixos-container destroy $container || true
     done
@@ -517,6 +547,8 @@ if [[ $ssh ]]; then
 fi
 # This env var is read by ./eval-config.nix while building
 export extraContainerSSH=$ssh
+
+getInstallDirs
 
 needToBuildContainers() {
     [[ $containerExpr || ! $1 || -f $1 || -e $1/default.nix ]]
@@ -642,7 +674,7 @@ checkInstallationSuccess() {
 echo
 echo "Installing containers:"
 
-mkdir -p $mutableServicesDir /etc/containers /nix/var/nix/gcroots/auto/
+mkdir -p $mutableServicesDir "$configDirectory" /nix/var/nix/gcroots/auto/
 if [[ ! $isNixOS ]]; then createOsReleaseFile; fi
 
 changedContainers=()
@@ -650,8 +682,8 @@ onlySystemChangedContainers=()
 for container in ${allContainers[@]} ; do
     service=$nixosSystemEtc/systemd/system/container@$container.service
     serviceDest=$mutableServicesDir/$(basename $service)
-    confFile=$nixosSystemEtc/containers/$container.conf
-    confDest=/etc/containers/$(basename $confFile)
+    confFile=$nixosSystemEtc/$configDirectoryName/$container.conf
+    confDest="$configDirectory/$(basename $confFile)"
 
     if isContainerUnchanged; then
         echo "$container (unchanged, skipped)"
@@ -715,7 +747,7 @@ handleShell() {
         if [[ $ip ]]; then
             echo "Container address: $ip (\$ip)"
         fi
-        echo "Container filesystem: /var/lib/containers/$name"
+        echo "Container filesystem: $EXTRA_CONTAINER_stateDirectory/$name"
         echo
         echo 'Run "c COMMAND" to execute a command in the container'
         echo 'Run "c" to start a shell session inside the container'
@@ -735,6 +767,7 @@ handleShell() {
       fi
       export name=$runningShellContainer
       export ip=$containerIp
+      export EXTRA_CONTAINER_stateDirectory=$stateDirectory
     '
 
     if [[ $runCommand ]]; then

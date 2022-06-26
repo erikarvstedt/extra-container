@@ -660,7 +660,7 @@ for container in ${allContainers[@]} ; do
         changedContainers+=($container)
 
         if [[ ! -e $confFile ]]; then
-            errEcho "Unexpected error: $confFile doesn't exist"
+            errEcho "Error: $confFile doesn't exist"
             exit 1
         fi
 

@@ -90,6 +90,11 @@
               services.getty.autologinUser = "root";
               nix.nixPath = [ "nixpkgs=${nixpkgs}" ];
               system.stateVersion = config.system.nixos.release;
+              documentation.enable = false;
+              # Power off VM when the user exits the shell
+              systemd.services."serial-getty@".preStop = ''
+                echo o >/proc/sysrq-trigger
+              '';
               # Pre-build a minimal container
               system.extraDependencies = let
                 basicContainer = import ./eval-config.nix {

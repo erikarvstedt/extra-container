@@ -161,7 +161,7 @@ let
                 }
               )
               {
-                config = ({ pkgs, ... }: mkMerge [
+                config = ({ pkgs, ... }@moduleArgs: mkMerge [
                   {
                     systemd.services.forward-to-localhost = mkIf (config.extra.exposeLocalhost && config.privateNetwork) {
                       wantedBy = [ "network.target" ];
@@ -184,6 +184,8 @@ let
                           iptables -w -A nixos-fw -s ${config.hostAddress} -j ACCEPT
                         ''
                     );
+                    # Silence system state warning
+                    system.stateVersion = lib.mkDefault moduleArgs.config.system.nixos.release;
                   }
                   (mkIf config.extra.enableSSH {
                      services.openssh.enable = containerAssert config.privateNetwork name ''

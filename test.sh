@@ -15,10 +15,7 @@ cleanup() {
 }
 trap "cleanup" EXIT
 
-reportError() {
-    echo "Error on line $1"
-}
-trap 'reportError $LINENO' ERR
+trap "echo \"Error at $(realpath ${BASH_SOURCE[0]}):\$LINENO\"" ERR
 
 testMatches() {
     actual="$1"

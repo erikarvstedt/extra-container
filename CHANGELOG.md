@@ -1,3 +1,6 @@
+# 0.10 (2022-06-26)
+- Enhancements
+  - Support NixOS 22.05
 # 0.9 (2022-04-11)
 - Enhancements
   - Support NixOS unstable

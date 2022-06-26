@@ -1,7 +1,7 @@
 {
   description = "Run declarative NixOS containers without full system rebuilds";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/21.11";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/22.05";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs = { self, nixpkgs, flake-utils }:
@@ -50,14 +50,16 @@
           test = pkgs.nixosTest {
             name = "extra-container";
 
-            machine = {
+            nodes.machine = { config, ... }: {
               imports = [ self.nixosModule ];
               virtualisation.memorySize = 1024; # Needed for evaluating the container system
               nix.nixPath = [ "nixpkgs=${nixpkgs}" ];
+              system.stateVersion = config.system.nixos.release;
               # Pre-build the container used by testScript
               system.extraDependencies = let
                 basicContainer = import ./eval-config.nix {
                   nixosPath = "${nixpkgs}/nixos";
+                  oldInstallDirs = false;
                   inherit system;
                   systemConfig = {
                     containers.test.config.environment.etc.testFile.text = "testSuccess";
@@ -79,21 +81,26 @@
           # Used by apps.vm
           vm = (import "${nixpkgs}/nixos" {
             inherit system;
-            configuration = { pkgs, lib, ... }: with lib; {
+            configuration = { config, pkgs, lib, modulesPath, ... }: with lib; {
+              imports = [
+                self.nixosModule
+                "${modulesPath}/virtualisation/qemu-vm.nix"
+              ];
               virtualisation.graphics = false;
               services.getty.autologinUser = "root";
               nix.nixPath = [ "nixpkgs=${nixpkgs}" ];
-              imports = [ self.nixosModule ];
+              system.stateVersion = config.system.nixos.release;
               # Pre-build a minimal container
               system.extraDependencies = let
                 basicContainer = import ./eval-config.nix {
                   nixosPath = "${nixpkgs}/nixos";
+                  oldInstallDirs = false;
                   inherit system;
                   systemConfig = {};
                 };
               in [ basicContainer.config.system.build.etc ];
             };
-          }).vm;
+          }).config.system.build.vm;
 
           runVM = pkgs.writers.writeBash "run-vm" ''
             set -euo pipefail
@@ -111,8 +118,9 @@
             trap "rm -rf $TMPDIR" EXIT
 
             export QEMU_OPTS="-smp $(nproc) -m 2000"
-            export tests='start_all(); import code; code.interact(local=globals())'
-            ${packages.test.driver}/bin/nixos-test-driver
+            ${packages.test.driver}/bin/nixos-test-driver <(
+              echo "start_all(); import code; code.interact(local=globals())"
+            )
           '';
 
           updateReadme = pkgs.writers.writeBash "update-readme" ''

@@ -36,7 +36,7 @@ sudo extra-container create --start <<'EOF'
 }
 EOF
 
-curl 10.250.0.2:50 # Returns 'hello' from the container
+curl --http0.9 10.250.0.2:50 # Returns 'hello' from the container
 
 # Now change the 'hello' string in the container definition to something
 # else and re-run the `extra-container create --start` command.

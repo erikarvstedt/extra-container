@@ -103,8 +103,8 @@ read -d '' src <<'EOF' || :
   };
 }
 EOF
-# Provide container config via `-E` instead of stdin because the shell requires
-# access to the terminal's stdin.
+# Provide container config via `-E` instead of stdin because the shell's stdin
+# should be connected to the terminal.
 extra-container shell -E "$src" --ssh
 ```
 

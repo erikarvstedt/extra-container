@@ -69,33 +69,12 @@ extra-container shell -E "$cfg" --run c hostname # => hello
 
 ### On NixOS
 
-##### NixOS unstable
+##### NixOS ≥ 21.11
 
 Add `programs.extra-container.enable = true` to your configuration.
 
-##### NixOS stable with `flake` support
-Import `extra-container.nixosModule` in your configuration.
-
-##### NixOS stable without `flake` support
-
-```nix
-{ pkgs, ... }:
-let
-  extra-container = let
-    src = builtins.fetchGit {
-      url = "https://github.com/erikarvstedt/extra-container.git";
-      # Recommended: Specify a git revision hash
-      # rev = "...";
-    };
-  in
-    pkgs.callPackage src { pkgSrc = src; };
-in
-{
-  environment.systemPackages = [ extra-container ];
-  # For NixOS > 20.09:
-  boot.extraSystemdUnitPaths = [ "/etc/systemd-mutable/system" ];
-}
-```
+##### Any NixOS with `flake` support
+Import `extra-container.nixosModules.default` in your configuration.
 
 ### On other systemd-based Linux distros
 

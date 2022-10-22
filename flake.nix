@@ -29,10 +29,6 @@
         # This only works when `nix develop` is started from the repo root directory.
         devShells.default = pkgs.stdenv.mkDerivation {
           name = "shell";
-          packages = with pkgs; [
-            nixos-container
-            openssh
-          ];
           shellHook =  ''
             # Enable calling the local source (./extra-container) with command `extra-container`
             export PATH="$(realpath .)''${PATH:+:}$PATH"

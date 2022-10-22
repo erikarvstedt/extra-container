@@ -115,7 +115,16 @@ case $1 in
         echo "extra-container restart <container>..."
         echo "    Fixes the broken restart command of nixos-container (nixpkgs issue #43652)"
         echo
-        echo "extra-container destroy <container>..."
+        echo "extra-container destroy <container-name>..."
+        echo "    Destroy containers"
+        echo
+        echo "extra-container destroy <args for create/shell>..."
+        echo "    Destroy the containers defined by the args for command \`create\` or \`shell\` (see above)."
+        echo "    For this to work, the first arg after \`destroy\` must start with one of the"
+        echo "    following three characters: ./-"
+        echo
+        echo "    Example:"
+        echo "      extra-container destroy ./containers.nix"
         echo
         echo "extra-container destroy --all|-a"
         echo "    Destroy all extra containers"
@@ -351,6 +360,174 @@ getInstallDirs() {
     fi
 }
 
+# This fn is used by commands `create`, `shell`, `destroy`.
+# To simplify the implementation, this fn includes the whole arg parsing for commands
+# `create`, `shell`. These args are not by `destroy`.
+getContainersFromDefinition() {
+    start=
+    update=
+    restart=
+    ssh=
+    containerExpr=
+    attr=
+    nixpkgsPath=
+    nixosPath=
+    buildArgs=()
+    runCommand=()
+
+    destroy=1
+    forceDestroy=
+
+    args=()
+    while [[ $# > 0 ]]; do
+        arg="$1"
+        shift
+        case $arg in
+            --start|-s)
+                start=1
+                ;;
+            --update-changed|-u)
+                update=1
+                ;;
+            --restart-changed|-r)
+                restart=1
+                ;;
+            --ssh)
+                ssh=1
+                ;;
+            --expr|-E)
+                containerExpr="$1"
+                shift
+                ;;
+            --attr|-A)
+                attr="$1"
+                shift
+                ;;
+            --nixpkgs-path)
+                nixpkgsPath="$1"
+                shift
+                ;;
+            --nixos-path)
+                nixosPath="$1"
+                shift
+                ;;
+            --build-args)
+                buildArgs=()
+                # Add all following args until --run
+                while [[ $# > 0 && $1 != --run ]]; do
+                    buildArgs+=("$1")
+                    shift
+                done
+                ;;
+            --run)
+                runCommand=("$@")
+                break
+                ;;
+            --no-destroy|-n)
+                destroy=
+                ;;
+            --destroy|-d)
+                destroy=1
+                forceDestroy=1
+                ;;
+            *)
+                args+=("$arg")
+                ;;
+        esac
+    done
+    set -- "${args[@]}"
+
+    if [[ ! $containerExpr ]]; then
+        arg=${1:-}
+        shift || true
+    fi
+    if [[ $# > 0 ]]; then
+        errEcho "Error: Unhandled arguments: $*"
+        exit 1
+    fi
+
+    ## 1. Build containers if needed
+
+    if [[ $ssh ]]; then
+        makeSSHKey
+    fi
+    # This env var is read by ./eval-config.nix while building
+    export extraContainerSSH=$ssh
+
+    getInstallDirs
+
+    needToBuildContainers() {
+        if [[ $containerExpr ]]; then
+            return 0;
+        fi
+        if [[ $arg ]]; then
+            if [[ -f $arg || -e $arg/default.nix ]]; then
+                return 0
+            fi
+        elif [[ ! $EXTRA_CONTAINER_ETC ]]; then
+            return 0
+        fi
+        return 1
+    }
+
+    if needToBuildContainers; then
+        if [[ ! $containerExpr ]]; then
+            if [[ ! $arg || $arg == - ]]; then
+                # Read container cfg from stdin
+                if [[ $shell ]]; then
+                    errEcho "Reading container config from STDIN is not supported for command 'shell'"
+                    exit 1
+                fi
+                read -d '' containerExpr || true
+            else
+                containerExpr="import ''$(realpath "$arg")''"
+            fi
+        fi
+        if [[ ! $nixosPath ]]; then
+            if [[ $nixpkgsPath ]]; then
+                nixosPath="\"\${toString ($nixpkgsPath)}/nixos\""
+            else
+                nixosPath="<nixpkgs/nixos>"
+            fi
+        fi
+        makeTmpDir
+        errEcho "Building containers..."
+        buildContainers "$containerExpr" $tmpDir "$nixosPath"
+        nixosSystemEtc=$tmpDir/result/etc
+
+        if [[ $onlyBuild ]]; then
+            realpath $tmpDir/result
+            exit 0
+        fi
+    else
+        if [[ $arg ]]; then
+            EXTRA_CONTAINER_ETC=$arg
+        fi
+        if [[ ! $EXTRA_CONTAINER_ETC ]]; then
+            errEcho "No containers specified"
+            exit 1
+        fi
+        nixosSystemEtc="$EXTRA_CONTAINER_ETC/etc"
+        if [[ ! -e $nixosSystemEtc ]]; then
+            errEcho "$nixosSystemEtc doesn't exist"
+            exit 1
+        fi
+    fi
+
+    ## 2. Gather containers
+
+    services=$(echo $nixosSystemEtc/systemd/system/container@?*.service)
+    if [[ ! $services ]]; then
+        errEcho "No container services in $nixosSystemEtc/systemd/system"
+        exit 0
+    fi
+    allContainers=()
+    for service in $services; do
+        allContainers+=($(getContainerName $service))
+    done
+    allContainers=($(printf '%s\n' ${allContainers[@]} | sort))
+}
+
 atExit() {
     origExitCode=$?
     set +e
@@ -397,18 +574,7 @@ systemctlIgnoreNotLoaded() {
 }
 
 destroyContainers() {
-    if [[ ! $1 ]]; then
-        errEcho "No container name specified"
-        exit 1
-    fi
-
     getInstallDirs
-
-    if [[ $1 == --all || $1 == -a ]]; then
-        containers=$(getContainers)
-    else
-        containers="$*"
-    fi
 
     if [[ ! -e "$configDirectory" ]]; then
         # No containers installed. The containers dir is needed by the code below.
@@ -417,7 +583,7 @@ destroyContainers() {
 
     local needDaemonReload=
 
-    for container in $containers; do
+    for container in "$@"; do
         service=container@${container}.service
         serviceFile=${mutableServicesDir}/$service
         confFile="$configDirectory/$container.conf"
@@ -463,178 +629,34 @@ destroyContainers() {
 }
 
 if [[ $destroy ]]; then
-    destroyContainers "$@"
+    if  [[ $1 == --all || $1 == -a ]]; then
+        getInstallDirs
+        containers=$(getContainers)
+    # If the first letter of the first arg is one of ./-
+    # or no arg is given and EXTRA_CONTAINER_ETC is defined
+    elif (($# > 0)) && [[ ${1:0:1} == [./-] ]] || [[ $EXTRA_CONTAINER_ETC ]]; then
+        # Get containers to be destroyed from the container definition
+        getContainersFromDefinition "$@"
+        containers=("${allContainers[@]}")
+        echo "Destroying containers:"
+        printf '%s\n' "${containers[@]}"
+    else
+        if (($# == 0)); then
+            errEcho "No container name specified"
+            exit 1
+        fi
+        containers=("$@")
+    fi
+
+    destroyContainers "${containers[@]}"
     exit 0
 fi
 
 # Commands 'create', 'shell'
 #------------------------------------------------------------------------------
+getContainersFromDefinition "$@"
 
-start=
-update=
-restart=
-ssh=
-containerExpr=
-attr=
-nixpkgsPath=
-nixosPath=
-buildArgs=()
-runCommand=()
-
-destroy=1
-forceDestroy=
-
-args=()
-while [[ $# > 0 ]]; do
-    arg="$1"
-    shift
-    case $arg in
-        --start|-s)
-            start=1
-            ;;
-        --update-changed|-u)
-            update=1
-            ;;
-        --restart-changed|-r)
-            restart=1
-            ;;
-        --ssh)
-            ssh=1
-            ;;
-        --expr|-E)
-            containerExpr="$1"
-            shift
-            ;;
-        --attr|-A)
-            attr="$1"
-            shift
-            ;;
-        --nixpkgs-path)
-            nixpkgsPath="$1"
-            shift
-            ;;
-        --nixos-path)
-            nixosPath="$1"
-            shift
-            ;;
-        --build-args)
-            buildArgs=()
-            # Add all following args until --run
-            while [[ $# > 0 && $1 != --run ]]; do
-                buildArgs+=("$1")
-                shift
-            done
-            ;;
-        --run)
-            runCommand=("$@")
-            break
-            ;;
-        --no-destroy|-n)
-            destroy=
-            ;;
-        --destroy|-d)
-            destroy=1
-            forceDestroy=1
-            ;;
-        *)
-            args+=("$arg")
-            ;;
-    esac
-done
-set -- "${args[@]}"
-
-if [[ ! $containerExpr ]]; then
-    arg=${1:-}
-    shift || true
-fi
-if [[ $# > 0 ]]; then
-    errEcho "Error: Unhandled arguments: $*"
-    exit 1
-fi
-
-## 1. Build containers if needed
-
-if [[ $ssh ]]; then
-    makeSSHKey
-fi
-# This env var is read by ./eval-config.nix while building
-export extraContainerSSH=$ssh
-
-getInstallDirs
-
-needToBuildContainers() {
-    if [[ $containerExpr ]]; then
-        return 0;
-    fi
-    if [[ $arg ]]; then
-        if [[ -f $arg || -e $arg/default.nix ]]; then
-            return 0
-        fi
-    elif [[ ! $EXTRA_CONTAINER_ETC ]]; then
-        return 0
-    fi
-    return 1
-}
-
-if needToBuildContainers; then
-    if [[ ! $containerExpr ]]; then
-        if [[ ! $arg || $arg == - ]]; then
-            # Read container cfg from stdin
-            if [[ $shell ]]; then
-                errEcho "Reading container config from STDIN is not supported for command 'shell'"
-                exit 1
-            fi
-            read -d '' containerExpr || true
-        else
-            containerExpr="import ''$(realpath "$arg")''"
-        fi
-    fi
-    if [[ ! $nixosPath ]]; then
-        if [[ $nixpkgsPath ]]; then
-            nixosPath="\"\${toString ($nixpkgsPath)}/nixos\""
-        else
-            nixosPath="<nixpkgs/nixos>"
-        fi
-    fi
-    makeTmpDir
-    errEcho "Building containers..."
-    buildContainers "$containerExpr" $tmpDir "$nixosPath"
-    nixosSystemEtc=$tmpDir/result/etc
-
-    if [[ $onlyBuild ]]; then
-        realpath $tmpDir/result
-        exit 0
-    fi
-else
-    if [[ $arg ]]; then
-        EXTRA_CONTAINER_ETC=$arg
-    fi
-    if [[ ! $EXTRA_CONTAINER_ETC ]]; then
-        errEcho "No containers specified"
-        exit 1
-    fi
-    nixosSystemEtc="$EXTRA_CONTAINER_ETC/etc"
-    if [[ ! -e $nixosSystemEtc ]]; then
-        errEcho "$nixosSystemEtc doesn't exist"
-        exit 1
-    fi
-fi
-
-## 2. Gather containers
-
-services=$(echo $nixosSystemEtc/systemd/system/container@?*.service)
-if [[ ! $services ]]; then
-    errEcho "No container services in $nixosSystemEtc/systemd/system"
-    exit 0
-fi
-allContainers=()
-for service in $services; do
-    allContainers+=($(getContainerName $service))
-done
-allContainers=($(printf '%s\n' ${allContainers[@]} | sort))
-
-
-## 3. Shell related setup
+## Shell related setup
 
 startShellEnv=
 makeStartInterruptible=

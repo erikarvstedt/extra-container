@@ -107,6 +107,21 @@ EOF
 testMatches "$output" "*Updating*test-1*Restarting*test-2*"
 
 #―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+echo "Test list"
+
+output=$(extra-container list | grep ^test- || true)
+testMatches "$output" "test-1*test-2"
+
+#―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+echo "Test destroy"
+
+[[ $(echo /var/lib/*containers/test-*) ]]
+cleanup
+output=$(extra-container list | grep ^test- || true)
+testMatches "$output" ""
+[[ ! $(echo /var/lib/*containers/test-*) ]]
+
+#―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 echo "Test shell run"
 
 read -d '' src <<EOF || true
@@ -132,6 +147,9 @@ storePath=$(extra-container build <<EOF
   containers.test-1 = {
     $baseConfig;
   };
+  containers.test-2 = {
+    $baseConfig;
+  };
 }
 EOF
 )
@@ -139,19 +157,12 @@ EOF
 testMatches "$storePath" "/nix/store/*"
 
 output=$(extra-container create -s $storePath)
-testMatches "$output" "*Starting*test-1*"
+testMatches "$output" "*Starting*test-1*test-2*"
 
 #―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
-echo "Test list"
+echo "Test destroy from container definition"
+extra-container destroy $storePath
+[[ ! -e /var/lib/containers/test-1 ]]
+[[ ! -e /var/lib/containers/test-2 ]]
 
-output=$(extra-container list | grep ^test- || true)
-testMatches "$output" "test-1*test-2"
-
-#―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
-echo "Test destroy"
-
-[[ $(echo /var/lib/*containers/test-*) ]]
-cleanup
-output=$(extra-container list | grep ^test- || true)
-testMatches "$output" ""
-[[ ! $(echo /var/lib/*containers/test-*) ]]
+# TODO: Add flake tests when flakes have stabilized

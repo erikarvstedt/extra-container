@@ -302,7 +302,16 @@ extra-container list
 extra-container restart <container>...
     Fixes the broken restart command of nixos-container (nixpkgs issue #43652)
 
-extra-container destroy <container>...
+extra-container destroy <container-name>...
+    Destroy containers
+
+extra-container destroy <args for create/shell>...
+    Destroy the containers defined by the args for command `create` or `shell` (see above).
+    For this to work, the first arg after `destroy` must start with one of the
+    following three characters: ./-
+
+    Example:
+      extra-container destroy ./containers.nix
 
 extra-container destroy --all|-a
     Destroy all extra containers

@@ -129,7 +129,7 @@ fi
 #------------------------------------------------------------------------------
 
 errEcho() {
-    >&2 echo "$*"
+    >&2 echo "$@"
 }
 
 [[ -e /run/booted-system/nixos-version ]] && isNixOS=1 || isNixOS=
@@ -329,12 +329,14 @@ getInstallDirs() {
             # NixOS ≥22.05
             configDirectory=/etc/nixos-containers
             configDirectoryName=nixos-containers
+            otherConfigDirectoryName=containers
             stateDirectory=/var/lib/nixos-containers
             legacyInstallDirs=false
         else
             # NixOS <22.05
             configDirectory=/etc/containers
             configDirectoryName=containers
+            otherConfigDirectoryName=nixos-containers
             stateDirectory=/var/lib/containers
             legacyInstallDirs=true
         fi
@@ -694,7 +696,21 @@ for container in ${allContainers[@]} ; do
         changedContainers+=($container)
 
         if [[ ! -e $confFile ]]; then
-            errEcho "Error: $confFile doesn't exist"
+            alternativeConfFile=$nixosSystemEtc/$otherConfigDirectoryName/$container.conf
+            if [[ -e $alternativeConfFile ]]; then
+                errEcho
+                errEcho    'Error:'
+                errEcho    'To be compatible with this container host, the container'
+                errEcho -n 'must be built with `legacyInstallDirs = '
+                if [[ $legacyInstallDirs ]]; then
+                    errEcho 'true`.'
+                else
+                    errEcho 'false` (default).'
+                fi
+                errEcho
+            else
+                errEcho "Error: $confFile doesn't exist"
+            fi
             exit 1
         fi
 

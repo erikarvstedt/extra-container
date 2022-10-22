@@ -60,6 +60,7 @@
     } // (flake-utils.lib.eachSystem supportedSystems (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        inherit (nixpkgs) lib;
       in
       rec {
         packages.default = pkg pkgs;
@@ -67,11 +68,19 @@
         # This dev shell allows running the `extra-container` command directly from the local
         # source (./extra-container), for quick edit/test cycles.
         # This only works when `nix develop` is started from the repo root directory.
-        devShells.default = pkgs.stdenv.mkDerivation {
+        devShells.default = let
+          # Extra PATH, as defined in ./default.nix
+          path = lib.makeBinPath (with pkgs; [
+            openssh
+          ]);
+        in pkgs.stdenv.mkDerivation {
           name = "shell";
+
           shellHook =  ''
+            PATH="${path}''${PATH:+:}$PATH"
+
             # Enable calling the local source (./extra-container) with command `extra-container`
-            export PATH="$(realpath .)''${PATH:+:}$PATH"
+            PATH="$(realpath .):$PATH"
 
             # Use the pinned nixpkgs for building containers when running `extra-container`
             export NIX_PATH="nixpkgs=${nixpkgs}''${NIX_PATH:+:}$NIX_PATH"

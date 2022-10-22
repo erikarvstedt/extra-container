@@ -741,6 +741,7 @@ handleShell() {
 
     export containerIp=$(nixos-container show-ip $shellContainer 2> /dev/null) || containerIp=
     export runningShellContainer=$shellContainer
+    export containerStateDirectory=$stateDirectory
     extraContainerCmd() {
         if [[ $# > 0 ]]; then
             nixos-container run $name -- "$@" | cat;
@@ -765,7 +766,7 @@ handleShell() {
         if [[ $ip ]]; then
             echo "Container address: $ip (\$ip)"
         fi
-        echo "Container filesystem: $EXTRA_CONTAINER_stateDirectory/$name"
+        echo "Container filesystem: $containerStateDirectory/$name"
         echo
         echo 'Run "c COMMAND" to execute a command in the container'
         echo 'Run "c" to start a shell session inside the container'
@@ -785,7 +786,6 @@ handleShell() {
       fi
       export name=$runningShellContainer
       export ip=$containerIp
-      export EXTRA_CONTAINER_stateDirectory=$stateDirectory
     '
 
     if [[ $runCommand ]]; then

@@ -1,3 +1,12 @@
+# 0.11 (2022-10-22)
+- Enhancements
+  - Support building containers via Flakes (see [examples/flake](./examples/flake)).
+  - Support destroying containers from container definitions:\
+    If you have installed containers with command `extra-container create ./mycontainers.nix`,
+    you can now destroy these containers with the analogous command
+    `extra-container destroy ./mycontainers.nix`.
+- Fixes
+  - Fix incomplete container state directory path in `help()` message
 # 0.10 (2022-06-26)
 - Enhancements
   - Support NixOS 22.05

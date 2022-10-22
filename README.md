@@ -200,6 +200,10 @@ or via stdin to access the working directory.
 extra-container create -E '{ imports = [ <pwd/myfile.nix> ]; ... }'
 ```
 
+## Define containers via Flakes
+
+See [examples/flake](./examples/flake).
+
 ## Usage
 ```
 extra-container create <container-config-file>

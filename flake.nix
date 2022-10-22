@@ -4,7 +4,7 @@
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/22.05";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils }@inputs:
     let
       supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" ];
       pkg = pkgs: pkgs.callPackage ./. { pkgSrc = ./.; };
@@ -16,6 +16,46 @@
       };
 
       overlays.default = final: prev: { extra-container = pkg final; };
+
+      lib = {
+        inherit supportedSystems;
+
+        buildContainers = {
+          system
+          , config
+          , nixpkgs ? inputs.nixpkgs
+          , legacyInstallDirs ? false
+          , addRunner ? true
+        }: let
+          containers = self.lib.evalContainers { inherit system config nixpkgs legacyInstallDirs; };
+          etc = containers.config.system.build.etc;
+        in
+          if addRunner then
+            etc.overrideAttrs (old: {
+              name = "container";
+              buildCommand = old.buildCommand + "\n" + ''
+                install -D -m700 <(
+                  echo '#!/usr/bin/env bash'
+                  echo -n "EXTRA_CONTAINER_ETC=$out "; echo 'exec extra-container "$@"'
+                ) $out/bin/container
+              '';
+            })
+          else
+            etc;
+
+        evalContainers = {
+          system
+          , config
+          , nixpkgs ? inputs.nixpkgs
+          , legacyInstallDirs ? false
+        }: import ./eval-config.nix {
+          inherit
+            system
+            legacyInstallDirs;
+          nixosPath = nixpkgs + "/nixos";
+          systemConfig = config;
+        };
+      };
 
     } // (flake-utils.lib.eachSystem supportedSystems (system:
       let

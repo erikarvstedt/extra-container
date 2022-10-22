@@ -59,7 +59,7 @@
               system.extraDependencies = let
                 basicContainer = import ./eval-config.nix {
                   nixosPath = "${nixpkgs}/nixos";
-                  oldInstallDirs = false;
+                  legacyInstallDirs = false;
                   inherit system;
                   systemConfig = {
                     containers.test.config.environment.etc.testFile.text = "testSuccess";
@@ -99,7 +99,7 @@
               system.extraDependencies = let
                 basicContainer = import ./eval-config.nix {
                   nixosPath = "${nixpkgs}/nixos";
-                  oldInstallDirs = false;
+                  legacyInstallDirs = false;
                   inherit system;
                   systemConfig = {};
                 };

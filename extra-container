@@ -233,7 +233,7 @@ buildContainers() {
     " let cfg = ($containerCfg)$attrExpr;
       in (import $evalConfig {
          nixosPath = $nixosPath;
-         oldInstallDirs = $oldInstallDirs;
+         legacyInstallDirs = $legacyInstallDirs;
          systemConfig = cfg;
       }).config.system.build.etc
     " >/dev/null
@@ -330,13 +330,13 @@ getInstallDirs() {
             configDirectory=/etc/nixos-containers
             configDirectoryName=nixos-containers
             stateDirectory=/var/lib/nixos-containers
-            oldInstallDirs=false
+            legacyInstallDirs=false
         else
             # NixOS <22.05
             configDirectory=/etc/containers
             configDirectoryName=containers
             stateDirectory=/var/lib/containers
-            oldInstallDirs=true
+            legacyInstallDirs=true
         fi
     fi
 }

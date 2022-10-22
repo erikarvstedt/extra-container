@@ -1,6 +1,6 @@
 { nixosPath
 , systemConfig
-, oldInstallDirs
+, legacyInstallDirs
 , system ? builtins.currentSystem
 }:
 
@@ -53,7 +53,7 @@ let
       system.nssDatabases = dummy;
       system.nssModules = dummy;
       system.requiredKernelConfig = dummy;
-      system.stateVersion = optionValue (if oldInstallDirs then "21.11" else "22.05");
+      system.stateVersion = optionValue (if legacyInstallDirs then "21.11" else "22.05");
       ids.gids.keys = dummy;
       ids.uids.systemd-coredump = dummy;
       ids.gids.systemd-journal = dummy;

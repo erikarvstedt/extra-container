@@ -5,25 +5,23 @@
 }:
 
 let
-  nixos = toString nixosPath;
-
   # A minimal module set for evaluating container configs.
   # This significantly reduces extra-container evaluation overhead (total eval time - container eval time)
   # Compatible with nixpkgs >= 16.09
   baseModules = [
-    "${nixos}/modules/misc/assertions.nix"
-    "${nixos}/modules/misc/nixpkgs.nix"
-    "${nixos}/modules/misc/extra-arguments.nix"
-    "${nixos}/modules/system/activation/top-level.nix"
-    "${nixos}/modules/system/etc/etc.nix"
-    "${nixos}/modules/system/boot/systemd.nix"
+    (nixosPath + "/modules/misc/assertions.nix")
+    (nixosPath + "/modules/misc/nixpkgs.nix")
+    (nixosPath + "/modules/misc/extra-arguments.nix")
+    (nixosPath + "/modules/system/activation/top-level.nix")
+    (nixosPath + "/modules/system/etc/etc.nix")
+    (nixosPath + "/modules/system/boot/systemd.nix")
     nixosContainerModule
     dummyOptions
   ];
 
   nixosContainerModule = let
-    new = "${nixos}/modules/virtualisation/nixos-containers.nix";
-    old = "${nixos}/modules/virtualisation/containers.nix"; # For nixpkgs < 20.09
+    new = nixosPath + "/modules/virtualisation/nixos-containers.nix";
+    old = nixosPath + "/modules/virtualisation/containers.nix"; # For nixpkgs < 20.09)
   in
     if builtins.pathExists new then new else old;
 
@@ -231,7 +229,7 @@ let
     };
   };
 in
-import "${nixos}/lib/eval-config.nix" {
+import (nixosPath + "/lib/eval-config.nix") {
   inherit baseModules system;
   modules = [ extraModule systemConfig ];
 }

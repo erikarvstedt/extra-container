@@ -129,7 +129,7 @@
           '';
 
           updateReadme = pkgs.writers.writeBash "update-readme" ''
-            exec ${pkgs.ruby}/bin/ruby ${toString ./util/update-readme.rb}
+            exec ${pkgs.ruby}/bin/ruby ./util/update-readme.rb
           '';
         };
 

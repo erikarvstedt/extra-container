@@ -326,11 +326,13 @@ getInstallDirs() {
     if [[ ! $configDirectory ]]; then
         nixosContainer=$(type -p nixos-container)
         if grep -q '"/etc/nixos-containers"' "$nixosContainer"; then
+            # NixOS ≥22.05
             configDirectory=/etc/nixos-containers
             configDirectoryName=nixos-containers
             stateDirectory=/var/lib/nixos-containers
             oldInstallDirs=false
         else
+            # NixOS <22.05
             configDirectory=/etc/containers
             configDirectoryName=containers
             stateDirectory=/var/lib/containers

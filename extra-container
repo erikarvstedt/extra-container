@@ -3,6 +3,14 @@
 set -eo pipefail
 shopt -s nullglob
 
+# This script uses systemctl, machinectl and nsenter from the existing environment
+
+# If a container build output is given ($EXTRA_CONTAINER_ETC) and no command is
+# specified in $1, use `shell` as the default command
+if [[ $EXTRA_CONTAINER_ETC && ($# == 0 || $1 == -*) ]]; then
+    set -- shell "$@"
+fi
+
 case $1 in
     ""|help|-h|--help)
         echo "Usage:"
@@ -122,7 +130,7 @@ esac
 #------------------------------------------------------------------------------
 
 if [[ $EUID != 0 ]]; then
-    exec sudo PATH="$PATH" NIX_PATH="$NIX_PATH" "${BASH_SOURCE[0]}" "$@"
+    exec sudo PATH="$PATH" NIX_PATH="$NIX_PATH" EXTRA_CONTAINER_ETC="$EXTRA_CONTAINER_ETC" "${BASH_SOURCE[0]}" "$@"
 fi
 
 # Operating system specific setup
@@ -148,7 +156,7 @@ else
         exit 1
     fi
     if [[ ! -e /nix/var/nix/profiles/default ]]; then
-        errEcho "extra-container requires a multi-user nix installation."
+        errEcho "extra-container requires a multi-user nix installation"
         exit 1
     fi
 
@@ -555,10 +563,20 @@ export extraContainerSSH=$ssh
 getInstallDirs
 
 needToBuildContainers() {
-    [[ $containerExpr || ! $1 || -f $1 || -e $1/default.nix ]]
+    if [[ $containerExpr ]]; then
+        return 0;
+    fi
+    if [[ $arg ]]; then
+        if [[ -f $arg || -e $arg/default.nix ]]; then
+            return 0
+        fi
+    elif [[ ! $EXTRA_CONTAINER_ETC ]]; then
+        return 0
+    fi
+    return 1
 }
 
-if needToBuildContainers "$arg"; then
+if needToBuildContainers; then
     if [[ ! $containerExpr ]]; then
         if [[ ! $arg || $arg == - ]]; then
             # Read container cfg from stdin
@@ -588,7 +606,14 @@ if needToBuildContainers "$arg"; then
         exit 0
     fi
 else
-    nixosSystemEtc="$arg/etc"
+    if [[ $arg ]]; then
+        EXTRA_CONTAINER_ETC=$arg
+    fi
+    if [[ ! $EXTRA_CONTAINER_ETC ]]; then
+        errEcho "No containers specified"
+        exit 1
+    fi
+    nixosSystemEtc="$EXTRA_CONTAINER_ETC/etc"
     if [[ ! -e $nixosSystemEtc ]]; then
         errEcho "$nixosSystemEtc doesn't exist"
         exit 1

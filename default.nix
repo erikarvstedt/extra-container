@@ -28,6 +28,7 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Run declarative containers without full system rebuilds";
     homepage = "https://github.com/erikarvstedt/extra-container";
+    changelog = "https://github.com/erikarvstedt/extra-container/blob/master/CHANGELOG.md";
     license = licenses.mit;
     platforms = platforms.linux;
     maintainers = [ maintainers.erikarvstedt ];

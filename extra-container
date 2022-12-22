@@ -5,135 +5,141 @@ shopt -s nullglob
 
 # This script uses systemctl, machinectl and nsenter from the existing environment
 
+showHelp() {
+    echo "Usage:"
+    echo
+    echo "extra-container create <container-config-file>"
+    echo "                       [--attr|-A attrPath]"
+    echo "                       [--nixpkgs-path|--nixos-path path]"
+    echo "                       [--start|-s | --restart-changed|-r]"
+    echo "                       [--ssh]"
+    echo "                       [--build-args arg...]"
+    echo
+    echo "    <container-config-file> is a NixOS config file with container"
+    echo "    definitions like 'containers.mycontainer = { ... }'"
+    echo
+    echo "    --attr | -A attrPath"
+    echo "      Select an attribute from the config expression"
+    echo
+    echo "    --nixpkgs-path"
+    echo "      A nix expression that returns a path to the nixpkgs source"
+    echo "      to use for building the containers"
+    echo
+    echo "    --nixos-path"
+    echo "      Like '--nixpkgs-path', but for directly specifying the NixOS source"
+    echo
+    echo "    --start | -s"
+    echo "      Start all created containers"
+    echo "      Update running containers that have changed or restart them if '--restart-changed' was specified"
+    echo
+    echo "    --update-changed | -u"
+    echo "      Update running containers with a changed system configuration by running"
+    echo "      'switch-to-configuration' inside the container."
+    echo "      Restart containers with a changed container configuration"
+    echo
+    echo "    --restart-changed | -r"
+    echo "      Restart running containers that have changed"
+    echo
+    echo "    --ssh"
+    echo "      Generate SSH keys in /tmp and enable container SSH access."
+    echo "      The key files remain after exit and are reused on subsequent runs."
+    echo "      Unlocks the function 'cssh' in 'extra-container shell'."
+    echo "      Requires container option 'privateNetwork = true'."
+    echo
+    echo "    --build-args arg..."
+    echo "      All following args are passed to nix-build."
+    echo
+    echo "    Example:"
+    echo "      extra-container create mycontainers.nix --restart-changed"
+    echo
+    echo "      extra-container create mycontainers.nix --nixpkgs-path \\"
+    echo "        'fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz'"
+    echo
+    echo "      extra-container create mycontainers.nix --start --build-args --builders 'ssh://worker - - 8'"
+    echo
+    echo "echo <container-config> | extra-container create"
+    echo "    Read the container config from stdin"
+    echo
+    echo "    Example:"
+    echo "      extra-container create --start <<EOF"
+    echo "        { containers.hello = { enableTun = true; config = {}; }; }"
+    echo "      EOF"
+    echo
+    echo "extra-container create --expr|-E <container-config>"
+    echo "    Provide container config as an argument"
+    echo
+    echo "extra-container create <store-path>"
+    echo "    Create containers from <store-path>/etc"
+    echo
+    echo "    Examples:"
+    echo "      Create from nixos system derivation"
+    echo "      extra-container create /nix/store/9h..27-nixos-system-foo-18.03"
+    echo
+    echo "      Create from nixos etc derivation"
+    echo "      extra-container create /nix/store/32..9j-etc"
+    echo
+    echo "extra-container shell ..."
+    echo "    Start a container shell session."
+    echo "    See the README for a complete documentation."
+    echo "    Supports all arguments from 'create'"
+    echo
+    echo "    Extra arguments:"
+    echo "      --run <cmd> <arg>..."
+    echo "        Run command in shell session and exit"
+    echo "        Must be the last option given"
+    echo "      --no-destroy|-n"
+    echo "        Do not destroy shell container before and after running"
+    echo "      --destroy|-d"
+    echo "        If running inside an existing shell session, force container to"
+    echo "        be destroyed before and after running"
+    echo
+    echo "    Example:"
+    echo "      extra-container shell -E '{ containers.demo.config = {}; }'"
+    echo
+    echo "extra-container build ..."
+    echo "    Build the container config and print the resulting NixOS system etc path"
+    echo
+    echo "    This command can be used like 'create', but options related"
+    echo "    to starting are not supported"
+    echo
+    echo "extra-container list"
+    echo "    List all extra containers"
+    echo
+    echo "extra-container restart <container>..."
+    echo "    Fixes the broken restart command of nixos-container (nixpkgs issue #43652)"
+    echo
+    echo "extra-container destroy <container-name>..."
+    echo "    Destroy containers"
+    echo
+    echo "extra-container destroy <args for create/shell>..."
+    echo "    Destroy the containers defined by the args for command \`create\` or \`shell\` (see above)."
+    echo "    For this to work, the first arg after \`destroy\` must start with one of the"
+    echo "    following three characters: ./-"
+    echo
+    echo "    Example:"
+    echo "      extra-container destroy ./containers.nix"
+    echo
+    echo "extra-container destroy --all|-a"
+    echo "    Destroy all extra containers"
+    echo
+    echo "extra-container <cmd> <arg>..."
+    echo "    All other commands are forwarded to nixos-container"
+    exit 0
+}
+
+case $1 in
+    help|-h|--help)
+        showHelp
+        ;;
+esac
+
 # If a container build output is given ($EXTRA_CONTAINER_ETC) and no command is
 # specified in $1, use `shell` as the default command
 if [[ $EXTRA_CONTAINER_ETC && ($# == 0 || $1 == -*) ]]; then
     set -- shell "$@"
+elif [[ $# == 0 ]]; then
+     showHelp
 fi
-
-case $1 in
-    ""|help|-h|--help)
-        echo "Usage:"
-        echo
-        echo "extra-container create <container-config-file>"
-        echo "                       [--attr|-A attrPath]"
-        echo "                       [--nixpkgs-path|--nixos-path path]"
-        echo "                       [--start|-s | --restart-changed|-r]"
-        echo "                       [--ssh]"
-        echo "                       [--build-args arg...]"
-        echo
-        echo "    <container-config-file> is a NixOS config file with container"
-        echo "    definitions like 'containers.mycontainer = { ... }'"
-        echo
-        echo "    --attr | -A attrPath"
-        echo "      Select an attribute from the config expression"
-        echo
-        echo "    --nixpkgs-path"
-        echo "      A nix expression that returns a path to the nixpkgs source"
-        echo "      to use for building the containers"
-        echo
-        echo "    --nixos-path"
-        echo "      Like '--nixpkgs-path', but for directly specifying the NixOS source"
-        echo
-        echo "    --start | -s"
-        echo "      Start all created containers"
-        echo "      Update running containers that have changed or restart them if '--restart-changed' was specified"
-        echo
-        echo "    --update-changed | -u"
-        echo "      Update running containers with a changed system configuration by running"
-        echo "      'switch-to-configuration' inside the container."
-        echo "      Restart containers with a changed container configuration"
-        echo
-        echo "    --restart-changed | -r"
-        echo "      Restart running containers that have changed"
-        echo
-        echo "    --ssh"
-        echo "      Generate SSH keys in /tmp and enable container SSH access."
-        echo "      The key files remain after exit and are reused on subsequent runs."
-        echo "      Unlocks the function 'cssh' in 'extra-container shell'."
-        echo "      Requires container option 'privateNetwork = true'."
-        echo
-        echo "    --build-args arg..."
-        echo "      All following args are passed to nix-build."
-        echo
-        echo "    Example:"
-        echo "      extra-container create mycontainers.nix --restart-changed"
-        echo
-        echo "      extra-container create mycontainers.nix --nixpkgs-path \\"
-        echo "        'fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz'"
-        echo
-        echo "      extra-container create mycontainers.nix --start --build-args --builders 'ssh://worker - - 8'"
-        echo
-        echo "echo <container-config> | extra-container create"
-        echo "    Read the container config from stdin"
-        echo
-        echo "    Example:"
-        echo "      extra-container create --start <<EOF"
-        echo "        { containers.hello = { enableTun = true; config = {}; }; }"
-        echo "      EOF"
-        echo
-        echo "extra-container create --expr|-E <container-config>"
-        echo "    Provide container config as an argument"
-        echo
-        echo "extra-container create <store-path>"
-        echo "    Create containers from <store-path>/etc"
-        echo
-        echo "    Examples:"
-        echo "      Create from nixos system derivation"
-        echo "      extra-container create /nix/store/9h..27-nixos-system-foo-18.03"
-        echo
-        echo "      Create from nixos etc derivation"
-        echo "      extra-container create /nix/store/32..9j-etc"
-        echo
-        echo "extra-container shell ..."
-        echo "    Start a container shell session."
-        echo "    See the README for a complete documentation."
-        echo "    Supports all arguments from 'create'"
-        echo
-        echo "    Extra arguments:"
-        echo "      --run <cmd> <arg>..."
-        echo "        Run command in shell session and exit"
-        echo "        Must be the last option given"
-        echo "      --no-destroy|-n"
-        echo "        Do not destroy shell container before and after running"
-        echo "      --destroy|-d"
-        echo "        If running inside an existing shell session, force container to"
-        echo "        be destroyed before and after running"
-        echo
-        echo "    Example:"
-        echo "      extra-container shell -E '{ containers.demo.config = {}; }'"
-        echo
-        echo "extra-container build ..."
-        echo "    Build the container config and print the resulting NixOS system etc path"
-        echo
-        echo "    This command can be used like 'create', but options related"
-        echo "    to starting are not supported"
-        echo
-        echo "extra-container list"
-        echo "    List all extra containers"
-        echo
-        echo "extra-container restart <container>..."
-        echo "    Fixes the broken restart command of nixos-container (nixpkgs issue #43652)"
-        echo
-        echo "extra-container destroy <container-name>..."
-        echo "    Destroy containers"
-        echo
-        echo "extra-container destroy <args for create/shell>..."
-        echo "    Destroy the containers defined by the args for command \`create\` or \`shell\` (see above)."
-        echo "    For this to work, the first arg after \`destroy\` must start with one of the"
-        echo "    following three characters: ./-"
-        echo
-        echo "    Example:"
-        echo "      extra-container destroy ./containers.nix"
-        echo
-        echo "extra-container destroy --all|-a"
-        echo "    Destroy all extra containers"
-        echo
-        echo "extra-container <cmd> <arg>..."
-        echo "    All other commands are forwarded to nixos-container"
-        exit 0
-        ;;
-esac
 
 # Run as root if needed
 #------------------------------------------------------------------------------

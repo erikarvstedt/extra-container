@@ -637,7 +637,7 @@ destroyContainers() {
 if [[ $destroy ]]; then
     if  [[ $1 == --all || $1 == -a ]]; then
         getInstallDirs
-        containers=$(getContainers)
+        containers=($(getContainers))
     # If the first letter of the first arg is one of ./-
     # or no arg is given and EXTRA_CONTAINER_ETC is defined
     elif (($# > 0)) && [[ ${1:0:1} == [./-] ]] || [[ $EXTRA_CONTAINER_ETC ]]; then

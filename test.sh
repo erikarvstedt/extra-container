@@ -136,7 +136,7 @@ output=$(extra-container shell -E "$src" --run c uname -a)
 testMatches "$output" "*Linux test*"
 
 # Container should be destroyed after running
-[[ ! -e /var/lib/containers/test-1 ]]
+[[ ! -e /var/lib/*containers/test-1 ]]
 
 #―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 echo "Test manual build"
@@ -162,7 +162,7 @@ testMatches "$output" "*Starting*test-1*test-2*"
 #―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 echo "Test destroy from container definition"
 extra-container destroy $storePath
-[[ ! -e /var/lib/containers/test-1 ]]
-[[ ! -e /var/lib/containers/test-2 ]]
+[[ ! -e /var/lib/*containers/test-1 ]]
+[[ ! -e /var/lib/*containers/test-2 ]]
 
 # TODO: Add flake tests when flakes have stabilized

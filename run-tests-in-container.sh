@@ -8,7 +8,7 @@ PATH=$scriptDir:$PATH
 
 cleanup() {
     # clean immutable files inside the container
-    for f in /var/lib/containers/test-extra-container/var/lib/containers/*/var/empty; do
+    for f in /var/lib/*containers/test-extra-container/var/lib/*containers/*/var/empty; do
         chattr -i -a "$f"
         rm -rf "$f"
     done

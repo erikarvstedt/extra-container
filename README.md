@@ -118,7 +118,7 @@ Enter "h" for documentation.
 
 $ h
 Container address: 10.250.0.2 ($ip)
-Container filesystem: /var/lib/containers/demo
+Container filesystem: /var/lib/nixos-containers/demo
 
 Run "c COMMAND" to execute a command in the container
 Run "c" to start a shell session inside the container

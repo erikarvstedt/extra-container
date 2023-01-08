@@ -29,19 +29,20 @@
         }: let
           containers = self.lib.evalContainers { inherit system config nixpkgs legacyInstallDirs; };
           etc = containers.config.system.build.etc;
-        in
-          if addRunner then
-            etc.overrideAttrs (old: {
-              name = "container";
-              buildCommand = old.buildCommand + "\n" + ''
+          withRunner = etc.overrideAttrs (old: {
+            name = "container";
+            buildCommand = old.buildCommand + "\n" + ''
                 install -D -m700 <(
                   echo '#!/usr/bin/env bash'
                   echo -n "EXTRA_CONTAINER_ETC=$out "; echo 'exec extra-container "$@"'
                 ) $out/bin/container
               '';
-            })
-          else
-            etc;
+          });
+        in
+          (if addRunner then withRunner else etc) // {
+            inherit (containers) config;
+            inherit (containers.config) containers;
+          };
 
         evalContainers = {
           system

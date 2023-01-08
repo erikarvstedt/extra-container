@@ -1,4 +1,10 @@
 # 0.12 (unreleased)
+- Enhancements
+  - Flake: Allow accessing built container configs.
+    Example:
+    ```bash
+    nix eval ./examples/flake --apply 'sys: sys.containers.demo.config.networking.hostName'
+    ```
 - Fixes
   - Fix `extra-container destroy --all` when more than one container is installed
 # 0.11 (2022-10-22)

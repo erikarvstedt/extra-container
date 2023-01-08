@@ -24,3 +24,7 @@ nix run . -- --run bash -c 'curl --http0.9 $ip:50'
 nix build . --out-link /tmp/container
 # 2. Run container
 extra-container shell /tmp/container
+
+
+## Inspect container configs
+nix eval . --apply 'sys: sys.containers.demo.config.networking.hostName'

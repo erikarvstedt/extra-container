@@ -7,6 +7,7 @@
     ```
 - Fixes
   - Fix `extra-container destroy --all` when more than one container is installed
+  - Add compatibility with current NixOS unstable
 # 0.11 (2022-10-22)
 - Enhancements
   - Support building containers via Flakes (see [examples/flake](./examples/flake)).

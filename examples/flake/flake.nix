@@ -24,6 +24,11 @@
           containers.demo = {
             extra.addressPrefix = "10.250.0";
 
+            # In Nixpkgs > 22.11 (currently this means unstable), `specialArgs` is available as an option.
+            # It allows you to add module arguments that are evaluated outside the module system,
+            # meaning you are allowed to use them in e.g. `imports` without causing infinite recursion.
+            # specialArgs = { inherit inputs; };
+
             config = { pkgs, ... }: {
               systemd.services.hello = {
                 wantedBy = [ "multi-user.target" ];

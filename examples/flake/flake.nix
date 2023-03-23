@@ -24,6 +24,10 @@
           containers.demo = {
             extra.addressPrefix = "10.250.0";
 
+            # `specialArgs` is available in nixpkgs > 22.11
+            # This is useful for importing flakes from modules (see nixpkgs/lib/modules.nix).
+            # specialArgs = { inherit inputs; };
+
             config = { pkgs, ... }: {
               systemd.services.hello = {
                 wantedBy = [ "multi-user.target" ];

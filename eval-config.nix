@@ -47,9 +47,10 @@ let
         syslog-ng.enable = optionValue false;
       };
       system.activationScripts = dummy;
-      system.path = optionValue "";
+      system.fsPackages = dummy;
       system.nssDatabases = dummy;
       system.nssModules = dummy;
+      system.path = optionValue "";
       system.requiredKernelConfig = dummy;
       system.stateVersion = optionValue (if legacyInstallDirs then "21.11" else "22.05");
       systemd.oomd = dummy;

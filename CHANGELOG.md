@@ -1,13 +1,13 @@
-# 0.12 (unreleased)
+# 0.12 (2023-06-15)
 - Enhancements
   - Flake: Allow accessing built container configs.
     Example:
     ```bash
     nix eval ./examples/flake --apply 'sys: sys.containers.demo.config.networking.hostName'
     ```
+  - Add compatibility with NixOS 23.05, NixOS unstable
 - Fixes
   - Fix `extra-container destroy --all` when more than one container is installed
-  - Add compatibility with current NixOS unstable
 # 0.11 (2022-10-22)
 - Enhancements
   - Support building containers via Flakes (see [examples/flake](./examples/flake)).

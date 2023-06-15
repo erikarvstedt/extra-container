@@ -755,7 +755,7 @@ for container in ${allContainers[@]} ; do
                 errEcho    'Error:'
                 errEcho    'To be compatible with this container host, the container'
                 errEcho -n 'must be built with `legacyInstallDirs = '
-                if [[ $legacyInstallDirs ]]; then
+                if [[ $legacyInstallDirs == true ]]; then
                     errEcho 'true`.'
                 else
                     errEcho 'false` (default).'

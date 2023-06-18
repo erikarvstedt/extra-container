@@ -606,6 +606,8 @@ destroyContainers() {
             fi
         fi
 
+        rm -f "$mutableServicesDir/machines.target.wants/$service"
+
         if [[ -L $serviceFile ]]; then
             rm $serviceFile
             needDaemonReload=1
@@ -773,6 +775,12 @@ for container in ${allContainers[@]} ; do
         gcRootsPath=$(makeGCRootsPath $container)
         ln -sf $serviceDest $gcRootsPath
         ln -sf $confDest $gcRootsPath.conf
+
+        if grep -q AUTO_START=1 "$confFile"; then
+            wantsDir=$mutableServicesDir/machines.target.wants
+            mkdir -p "$wantsDir"
+            ln -sfn "../$service" "$wantsDir"
+        fi
     fi
 done
 

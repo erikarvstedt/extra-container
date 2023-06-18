@@ -1,3 +1,7 @@
+# 0.13 (unreleased)
+- Enhancements
+  - Support NixOS option `containers.<name>.autoStart`.
+    This allows creating containers that are automatically started on system boot.
 # 0.12 (2023-06-15)
 - Enhancements
   - Flake: Allow accessing built container configs.

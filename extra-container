@@ -699,7 +699,7 @@ confWithoutSystem() {
 isContainerUnchanged() {
     [[ -e $serviceDest && \
        -e $confDest && \
-       $(realpath $service) == $(realpath $serviceDest) ]] || return 1
+       $(realpath $serviceFile) == $(realpath $serviceDest) ]] || return 1
 
     if [[ $(realpath $confFile) != $(realpath $confDest) ]]; then
         if [[ $(confWithoutSystem $confFile) == $(confWithoutSystem $confDest) ]]; then
@@ -737,8 +737,9 @@ if [[ ! $isNixOS ]]; then createOsReleaseFile; fi
 changedContainers=()
 onlySystemChangedContainers=()
 for container in ${allContainers[@]} ; do
-    service=$nixosSystemEtc/systemd/system/container@$container.service
-    serviceDest=$mutableServicesDir/$(basename $service)
+    service=container@$container.service
+    serviceFile=$nixosSystemEtc/systemd/system/$service
+    serviceDest=$mutableServicesDir/$service
     confFile=$nixosSystemEtc/$configDirectoryName/$container.conf
     confDest="$configDirectory/$(basename $confFile)"
 
@@ -767,7 +768,7 @@ for container in ${allContainers[@]} ; do
             exit 1
         fi
 
-        ln -sf $(realpath $service) $serviceDest
+        ln -sf $(realpath $serviceFile) $serviceDest
         ln -sf $(realpath $confFile) $confDest
         gcRootsPath=$(makeGCRootsPath $container)
         ln -sf $serviceDest $gcRootsPath

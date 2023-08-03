@@ -1,12 +1,12 @@
-## Usage via `nix run`
+# Usage via `nix run`
 
 #―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 # Container lifecycle
 
 # Create and start container defined by ./flake.nix
 nix run . -- create --start
-# After changing ./flake.nix, you can also use this command to update
-# the (running) container.
+# You can use the same command to update the (running) container,
+# after changing the container definition.
 #
 # The arguments after `--` are passed to the `extra-container` binary in PATH,
 # while the flake is used for the container definitions.

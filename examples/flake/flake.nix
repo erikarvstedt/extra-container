@@ -4,7 +4,7 @@
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
   outputs = { extra-container, ... }@inputs:
-    extra-container.inputs.flake-utils.lib.eachSystem extra-container.lib.supportedSystems (system: {
+    extra-container.lib.eachSupportedSystem (system: {
       packages.default = extra-container.lib.buildContainers {
         # The system of the container host
         inherit system;

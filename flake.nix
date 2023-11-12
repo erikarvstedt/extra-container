@@ -7,6 +7,7 @@
   outputs = { self, nixpkgs, flake-utils }@inputs:
     let
       supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" ];
+      eachSupportedSystem = flake-utils.lib.eachSystem supportedSystems;
       pkg = pkgs: pkgs.callPackage ./. { pkgSrc = ./.; };
     in
     {
@@ -18,7 +19,7 @@
       overlays.default = final: prev: { extra-container = pkg final; };
 
       lib = {
-        inherit supportedSystems;
+        inherit supportedSystems eachSupportedSystem;
 
         buildContainers = {
           system
@@ -58,7 +59,7 @@
         };
       };
 
-    } // (flake-utils.lib.eachSystem supportedSystems (system:
+    } // (eachSupportedSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
         inherit (nixpkgs) lib;

@@ -6,7 +6,7 @@
 # Create and start container defined by ./flake.nix
 nix run . -- create --start
 # You can use the same command to update the (running) container,
-# after changing the container definition.
+# after changing the container configuration.
 #
 # The arguments after `--` are passed to the `extra-container` binary in PATH,
 # while the flake is used for the container definitions.

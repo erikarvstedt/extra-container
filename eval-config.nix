@@ -54,6 +54,7 @@ let
       system.requiredKernelConfig = dummy;
       system.stateVersion = optionValue (if legacyInstallDirs then "21.11" else "22.05");
       systemd.oomd = dummy;
+      systemd.user.generators = optionValue {};
       ids.gids.keys = dummy;
       ids.uids.systemd-coredump = dummy;
       ids.gids.systemd-journal = dummy;

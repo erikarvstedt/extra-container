@@ -1,7 +1,7 @@
 {
   description = "Run declarative NixOS containers without full system rebuilds";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/23.05";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/24.05";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs = { self, nixpkgs, flake-utils }@inputs:
@@ -99,7 +99,10 @@
 
             nodes.machine = { config, ... }: {
               imports = [ self.nixosModules.default ];
-              virtualisation.memorySize = 1024; # Needed for evaluating the container system
+              # memorySize = 1024 needed for evaluating the container system
+              # memorySize = 1200 needed to avoid error during boot:
+              #   'agetty[817]: failed to open credentials directory'
+              virtualisation.memorySize = 1200;
               nix.nixPath = [ "nixpkgs=${nixpkgs}" ];
               system.stateVersion = config.system.nixos.release;
               # Pre-build the container used by testScript

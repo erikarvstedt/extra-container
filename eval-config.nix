@@ -34,6 +34,7 @@ let
       boot.kernelModules = dummy;
       boot.kernelPackages.kernel.version = optionValue "";
       boot.kernelParams = dummy;
+      boot.loader.systemd-boot.bootCounting.enable = optionValue false;
       environment.systemPackages = dummy;
       networking.dhcpcd.denyInterfaces = dummy;
       networking.extraHosts = dummy;

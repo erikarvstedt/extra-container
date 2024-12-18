@@ -33,11 +33,16 @@
           withRunner = etc.overrideAttrs (old: {
             name = "container";
             buildCommand = old.buildCommand + "\n" + ''
-                install -D -m700 <(
-                  echo '#!/usr/bin/env bash'
-                  echo -n "EXTRA_CONTAINER_ETC=$out "; echo 'exec extra-container "$@"'
-                ) $out/bin/container
-              '';
+              install -D -m700 <(printf '${''
+                #!/usr/bin/env bash
+                if ! type -p extra-container >/dev/null; then
+                  >&2 echo "Error: extra-container is not installed"
+                  >&2 echo "Docs: https://github.com/erikarvstedt/extra-container?tab=readme-ov-file#install"
+                  exit 1
+                fi
+                EXTRA_CONTAINER_ETC=%s exec extra-container "$@"
+              ''}' "$out") $out/bin/container
+            '';
           });
         in
           (if addRunner then withRunner else etc) // {

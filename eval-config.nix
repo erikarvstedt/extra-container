@@ -37,6 +37,7 @@ let
       boot.loader.systemd-boot.bootCounting.enable = optionValue false;
       environment.systemPackages = dummy;
       networking.dhcpcd.denyInterfaces = dummy;
+      networking.hosts = dummy;
       networking.extraHosts = dummy;
       networking.proxy.envVars = optionValue {};
       security = dummy;

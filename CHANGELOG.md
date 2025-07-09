@@ -1,3 +1,6 @@
+# 0.14 (unreleased)
+- Enhancements
+  - Support NixOS unstable
 # 0.13 (2024-12-12)
 - Enhancements
   - Support NixOS option `containers.<name>.autoStart`.

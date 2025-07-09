@@ -25,7 +25,7 @@ let
   in
     if builtins.pathExists new then new else old;
 
-  dummyOptions = { lib, options, ... }: let
+  dummyOptions = { pkgs, lib, options, ... }: let
     optionValue = default: lib.mkOption { inherit default; };
     dummy = optionValue [];
   in {
@@ -40,6 +40,7 @@ let
       networking.hosts = dummy;
       networking.extraHosts = dummy;
       networking.proxy.envVars = optionValue {};
+      nix.package = optionValue pkgs.nix;
       security = dummy;
       services = {
         dbus = dummy;

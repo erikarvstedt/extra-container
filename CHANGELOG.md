@@ -1,4 +1,4 @@
-# 0.14 (unreleased)
+# 0.14 (2025-12-19)
 - Enhancements
   - Support NixOS unstable
 # 0.13 (2024-12-12)

@@ -1,7 +1,7 @@
 {
   description = "Run declarative NixOS containers without full system rebuilds";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs = { self, nixpkgs, flake-utils }@inputs:
@@ -99,7 +99,7 @@
 
         packages = {
           # Run a basic extra-container test in a NixOS VM
-          test = pkgs.nixosTest {
+          test = pkgs.testers.nixosTest {
             name = "extra-container";
 
             nodes.machine = { config, ... }: {

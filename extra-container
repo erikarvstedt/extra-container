@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
+# This script uses systemctl, machinectl and nsenter from the existing environment
+
 set -eo pipefail
 shopt -s nullglob
-
-# This script uses systemctl, machinectl and nsenter from the existing environment
+trap 'echo "Error at ${BASH_SOURCE[0]}:$LINENO"' ERR
 
 showHelp() {
     echo "Usage:"
@@ -207,8 +208,6 @@ fi
 
 # Parse and run command
 #------------------------------------------------------------------------------
-
-trap 'echo "Error at ${BASH_SOURCE[0]}:$LINENO"' ERR
 
 tmpDir=
 onlyBuild=

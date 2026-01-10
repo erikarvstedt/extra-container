@@ -2,7 +2,7 @@
 
 # This script uses systemctl, machinectl and nsenter from the existing environment
 
-set -eo pipefail
+set -Eeo pipefail
 shopt -s nullglob
 trap 'echo "Error at ${BASH_SOURCE[0]}:$LINENO"' ERR
 
